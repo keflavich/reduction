@@ -118,7 +118,7 @@ from metadata_tools import (determine_imsize, determine_phasecenter, logprint,
                             check_model_is_populated, test_tclean_success,
                             populate_model_column)
 from make_custom_mask import make_custom_mask
--from imaging_parameters import imaging_parameters, selfcal_pars
+from imaging_parameters import imaging_parameters, selfcal_pars
 from selfcal_heuristics import goodenough_field_solutions
 
 from tasks import tclean, plotms, split

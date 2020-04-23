@@ -1525,6 +1525,7 @@ line_parameters['W51-E']['n2hp']['cubewidth'] = '60km/s'
 line_parameters['G010.62']['n2hp']['cubewidth'] = '60km/s'
 line_parameters['G010.62']['h41a']['cubewidth'] = '120km/s'
 line_parameters['G338.93']['sio']['cubewidth'] = '120km/s'
+line_parameters['Sgr_B2_DS']['sio']['cubewidth'] = '150km/s'
 
 # line_parameters for H41a
 line_parameters['G008.67']['h41a']['vlsr'] = '44km/s'
