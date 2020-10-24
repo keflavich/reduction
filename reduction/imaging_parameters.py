@@ -40,7 +40,7 @@ CONTRIBUTOR NOTE:
 """
 import copy
 
-allfields = "G008.67 G337.92 W43-MM3 G328.25 G351.77 G012.80 G327.29 W43-MM1 G010.62 W51-IRS2 W43-MM2 G333.60 G338.93 W51-E G353.41".split()
+allfields = "G008.67 G337.92 W43-MM3 G328.25 G351.77 G012.80 G327.29 W43-MM1 G010.62 W51-IRS2 W43-MM2 G333.60 G338.93 W51-E G353.41 Sgr_B2_DS".split()
 
 # set up global defaults
 imaging_parameters = {
@@ -2981,6 +2981,7 @@ field_vlsr = {
     "G008.67": "37.60km/s",
     "G012.80": "37.00km/s",
     "G351.77": "-3.00km/s",
+    "Sgr_B2_DS": "60km/s",
 }
 # line parameters are converted by line_imaging.py into tclean parameters
 line_parameters_default = {
@@ -3076,6 +3077,9 @@ line_parameters_custom = {
         "ch3cn": {"cubewidth": "150km/s"},
         "h41a": {"cubewidth": "120km/s", "vlsr": "56km/s", "width": "2km/s"},
         "sio": {"cubewidth": "120km/s"},
+    },
+    "Sgr_B2_DS": {
+        "sio": {"cubewidth": "150km/s"},
     },
 }
 
