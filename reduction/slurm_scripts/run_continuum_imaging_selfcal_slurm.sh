@@ -5,7 +5,7 @@
 #SBATCH --mem=12gb                     # Job memory request
 #SBATCH --nodes=1
 #SBATCH --time=96:00:00               # Time limit hrs:min:sec
-#SBATCH --qos=adamginsburg-b
+#SBATCH --qos=adamginsburg
 #SBATCH --account=adamginsburg
 pwd; hostname; date
 
@@ -24,8 +24,9 @@ python getversion.py
 
 WORK_DIR='/orange/adamginsburg/ALMA_IMF/2017.1.01355.L'
 
-export CASA=/blue/adamginsburg/adamginsburg/casa/casa-pipeline-release-5.6.1-8.el7/bin/casa
+#export CASA=/blue/adamginsburg/adamginsburg/casa/casa-pipeline-release-5.6.1-8.el7/bin/casa
 #export CASA=/orange/adamginsburg/casa/casa-release-5.6.0-60.el7/bin/casa
+export CASA=/orange/adamginsburg/casa/casa-release-5.7.0-134.el7/bin/casa
 
 cd ${WORK_DIR}
 echo ${WORK_DIR}

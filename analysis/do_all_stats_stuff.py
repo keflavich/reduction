@@ -12,20 +12,29 @@ from pathlib import Path
 assert 'SCRIPT_DIR' in os.environ
 script_dir = Path(os.environ['SCRIPT_DIR'])
 
-scripts = ['delivery_status.py',
+scripts = [
+           'make_feb2021release.py',
+           #'make_oct2020release.py',
+           # don't do this any more 'link_files.py',
+           'link_files_restructured.py',
+           'delivery_status.py',
            'imstats.py',
-           'before_after_selfcal_quicklooks_Oct2020_release.py',
-           'dirty_selfcal_compare.py',
+           'before_after_selfcal_quicklooks_Feb2021release.py',
            'bsens_comparison.py',
+           'bsens_cleanest_diff_zooms.py',
+           'psf_check_figures.py',
+           'continuum_selections.py',
+           'central_frequency.py',
+           'dirty_selfcal_compare.py',
            'robust_comparisons.py',
            'selfcal_field_data.py',
-           'continuum_selections.py',
            'cube_metadata_grid.py',
-           'fullcube_quicklooks.py',
-           '7m12m_comparison.py',
+           'cube_spectral_quicklooks.py',
            'diagnostic_images.py',
            'diagnostic_spectra.py',
            'plot_uvspectra.py',
+           'fullcube_quicklooks.py',
+           '7m12m_comparison.py',
           ]
 
 for scriptname in scripts:
@@ -34,7 +43,7 @@ for scriptname in scripts:
     try:
         runpy.run_path(str(script_dir / scriptname), run_name="__main__")
     except Exception as ex:
-        print(ex)
+        print("Exception: ",ex)
     pl.close('all')
     print(f"script {scriptname} took {(time.time() - t0)/3600.:0.1f} hours")
 

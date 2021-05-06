@@ -13,8 +13,9 @@ import pylab as pl
 from compare_images import make_comparison_image
 
 cwd = os.getcwd()
-#octoberpath = '/orange/adamginsburg/ALMA_IMF/2017.1.01355.L/October2020Release/'
-basepath = '/bio/web/secure/adamginsburg/ALMA-IMF/October2020'
+#octoberpath = '/orange/adamginsburg/ALMA_IMF/2017.1.01355.L/February2021Release/'
+basepath = '/orange/adamginsburg/web/secure/ALMA-IMF/February2021Release'
+basepath = '/orange/adamginsburg/ALMA_IMF/2017.1.01355.L/February2021Release/'
 os.chdir(basepath)
 
 import imstats
@@ -22,11 +23,12 @@ import imstats
 
 #tbl = imstats.savestats(basepath=basepath)
 
-tbl = Table.read('/bio/web/secure/adamginsburg/ALMA-IMF/October2020/tables/metadata.ecsv')
+#tbl = Table.read('/orange/adamginsburg/web/secure/ALMA-IMF/February2021Release/tables/metadata.ecsv')
+tbl = Table.read('/orange/adamginsburg/ALMA_IMF/2017.1.01355.L/February2021Release/tables/metadata_image.tt0.ecsv')
 tbl.add_column(Column(name='casaversion_bsens', data=['             ']*len(tbl)))
 tbl.add_column(Column(name='casaversion_cleanest', data=['             ']*len(tbl)))
-tbl.add_column(Column(name='bsens_fn', data=[' '*100]*len(tbl)))
-tbl.add_column(Column(name='cleanest_fn', data=[' '*100]*len(tbl)))
+tbl.add_column(Column(name='bsens_fn', data=[' '*200]*len(tbl)))
+tbl.add_column(Column(name='cleanest_fn', data=[' '*200]*len(tbl)))
 tbl.add_column(Column(name='contselMaxDiff', data=[np.nan]*len(tbl)))
 tbl.add_column(Column(name='contselMinDiff', data=[np.nan]*len(tbl)))
 tbl.add_column(Column(name='contselMADDiff', data=[np.nan]*len(tbl)))
@@ -60,7 +62,7 @@ for field in "G008.67 G337.92 W43-MM3 G328.25 G351.77 G012.80 G327.29 W43-MM1 G0
             for suffix in ('image.tt0.fits', 'image.tt0.pbcor.fits'):
 
 
-                fns = glob.glob(f"{basepath}/{field}/B{band}/bsens/*_{config}_robust0_*final*.{suffix}")
+                fns = glob.glob(f"{basepath}/{field}/B{band}/bsens/*_{config}_robust0_*finaliter*.{suffix}")
                 if len(fns) > 1:
                     raise ValueError("Too many matches!")
                 elif len(fns) == 0:
@@ -77,7 +79,11 @@ for field in "G008.67 G337.92 W43-MM3 G328.25 G351.77 G012.80 G327.29 W43-MM1 G0
 
                 filepath = fn.split("bsens")[0]
 
-                bsens_fh = fits.open(bsens)
+                try:
+                    bsens_cube = SpectralCube.read(bsens, format='fits' if 'fits' in bsens else 'casa_image')
+                except Exception as ex:
+                    log.error(f"Failed to open 'bsens' image {bsens}")
+                    raise ex
 
                 if not os.path.exists(cleanest):
                     # hackaround for mismatched UID names, which shouldn't happen but did
@@ -95,8 +101,20 @@ for field in "G008.67 G337.92 W43-MM3 G328.25 G351.77 G012.80 G327.29 W43-MM1 G0
                 else:
                     allow_reproj = False
 
+                if not os.path.exists(cleanest):
+                    # hackaround for mismatched number of selfcal iterations
+                    cfns = glob.glob(f"{basepath}/{field}/B{band}/cleanest/*_{config}_robust0_*finaliter*.{suffix}")
+                    if len(cfns) == 1:
+                        log.info(f"Replaced original cleanest {cleanest} with {cfns[0]}")
+                        allow_reproj = False
+                        cleanest = cfns[0]
+                    elif len(cfns) == 0:
+                        log.warn(f"Did not find any cleanest matches to {fn}")
+                    else:
+                        log.warn(f"Found too many matches: {cfns}")
+
                 try:
-                    clean_fh = fits.open(cleanest)
+                    clean_cube = SpectralCube.read(cleanest, format='fits' if 'fits' in cleanest else 'casa_image')
                 except Exception as ex:
                     log.error(f"Failed to open 'cleanest' image {cleanest} (check for a bsens-cleanest mismatch)")
                     print(ex)
@@ -119,6 +137,8 @@ for field in "G008.67 G337.92 W43-MM3 G328.25 G351.77 G012.80 G327.29 W43-MM1 G0
                                                                               title1='cleanest',
                                                                               title2='bsens',
                                                                               allow_reproj=allow_reproj,
+                                                                              writediff=True,
+                                                                              diff_suffix='.bsens-cleanest'
                                                                              )
                 except IndexError:
                     raise
@@ -180,16 +200,18 @@ formats = {'dr_improvement_bsens': lambda x: '{0:0.2f}'.format(x),
            'BeamVsReq': lambda x: f'{x:0.2f}',
           }
 
-tbl.write('/bio/web/secure/adamginsburg/ALMA-IMF/October2020/tables/metadata_bsens_cleanest.ecsv',
-          overwrite=True)
-tbl.write('/bio/web/secure/adamginsburg/ALMA-IMF/October2020/tables/metadata_bsens_cleanest.html',
-          formats=formats,
-          format='ascii.html', overwrite=True)
-tbl.write('/bio/web/secure/adamginsburg/ALMA-IMF/October2020/tables/metadata_bsens_cleanest.tex',
-          formats=formats,
-          overwrite=True)
-tbl.write('/bio/web/secure/adamginsburg/ALMA-IMF/October2020/tables/metadata_bsens_cleanest.js.html',
-          #formats=formats,
-          format='jsviewer')
+for bp in ('/orange/adamginsburg/web/secure/ALMA-IMF/February2021Release',
+           '/orange/adamginsburg/ALMA_IMF/2017.1.01355.L/February2021Release'):
+    tbl.write(f'{bp}/tables/metadata_bsens_cleanest.ecsv',
+              overwrite=True)
+    tbl.write(f'{bp}/tables/metadata_bsens_cleanest.html',
+              formats=formats,
+              format='ascii.html', overwrite=True)
+    tbl.write(f'{bp}/tables/metadata_bsens_cleanest.tex',
+              formats=formats,
+              overwrite=True)
+    tbl.write(f'{bp}/tables/metadata_bsens_cleanest.js.html',
+              #formats=formats,
+              format='jsviewer')
 
 os.chdir(cwd)

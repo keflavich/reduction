@@ -56,6 +56,10 @@ basepath = '/orange/adamginsburg/ALMA_IMF/2017.1.01355.L/imaging_results'
 os.chdir(basepath)
 print(f"Changed from {cwd} to {basepath}, now running line_quicklooks")
 
+# allow %run -i w/overwrite=True to force overwriting
+if 'overwrite' not in locals():
+    overwrite = bool(os.getenv('OVERWRITE'))
+
 global then
 then = time.time()
 def dt():
@@ -78,7 +82,7 @@ for field in "G328.25 G351.77 W51-IRS2 W43-MM2 G327.29 G338.93 W51-E G353.41 G00
                         print(f"Found no matches for glob {globblob}")
                         continue
 
-                    if os.path.exists('collapse/min/{0}'.format(fn.replace(suffix,"_min_K.fits"))):
+                    if os.path.exists('collapse/min/{0}'.format(fn.replace(suffix,"_min_K.fits"))) and not overwrite:
                         print(f"Found completed quicklooks for {fn}, skipping.")
                         continue
 
@@ -253,3 +257,6 @@ for field in "G328.25 G351.77 W51-IRS2 W43-MM2 G327.29 G338.93 W51-E G353.41 G00
 Files that have resulted in m/s parsing failures:
     ['G012.80_B3_spw0_7M12M_n2hp.contsub.image']
 """
+
+# for fn in /orange/adamginsburg/ALMA_IMF/2017.1.01355.L/imaging_results/collapse/*/pngs; do out=${fn//*collapse\// }; out=${out/\//_}; outdir="/orange/adamginsburg/web/secure/ALMA-IMF/cube_quicklooks/${out/ /}"; cp -v ${fn}/* ${outdir}; done
+# for fn in /orange/adamginsburg/ALMA_IMF/2017.1.01355.L/imaging_results/collapse/*/pngs; do out=${fn//*collapse\// }; out=${out/\//_}; echo $out; mkdir /orange/adamginsburg/web/secure/ALMA-IMF/cube_quicklooks/${out}; cp -v ${fn}/* /orange/adamginsburg/web/secure/ALMA-IMF/cube_quicklooks/${out}/; done

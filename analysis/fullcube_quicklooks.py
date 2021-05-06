@@ -34,12 +34,19 @@ nthreads = 1
 scheduler = 'synchronous'
 
 use_temp_dir = os.getenv('USE_TEMP_ZARR')
+os.environ['TMPDIR'] = '/blue/adamginsburg/adamginsburg/tmp/'
 
 cores = os.getenv('SLURM_CPUS_ON_NODE')
 if cores is not None:
     cores = int(cores)
     nthreads = cores
-if cores > 1:
+
+nthreads = os.getenv('SLURM_STEP_NUM_TASKS')
+if nthreads is not None:
+    nthreads = int(nthreads)
+    dask.config.set(scheduler='threads')
+
+if cores > 2:
     from dask.distributed import Client
     #scheduler = 'threads'
     nnodes = os.getenv('SLURM_JOB_NUM_NODES')
@@ -50,8 +57,9 @@ if cores > 1:
     client = Client(memory_limit=mem, processes=False,
                     n_workers=nnodes, threads_per_worker=cores)
     scheduler = client
-    
 
+
+scheduler = dask.config.get('scheduler')
 print(f"Using {nthreads} threads with the {scheduler} scheduler")
 
 spws = {3: list(range(4)),
@@ -75,7 +83,7 @@ def dt():
 print("starting loops")
 
 for band in (6,3):
-    for config in ('12M', '7M12M'):
+    for config in ('12M',):# '7M12M'):
         for field in "G012.80 G328.25 G351.77 G327.29 G338.93 W51-E G353.41 G008.67 W43-MM2 G333.60 G337.92 W43-MM3 W43-MM1 G010.62 W51-IRS2".split():
             for spw in spws[band]:
                 for suffix in (".image", ".contsub.image"):
@@ -183,7 +191,9 @@ for band in (6,3):
                     dt(); print("Spatial mad_std")
                     pl.close('all')
                     pl.clf()
-                    stdspec = mcube.mad_std(axis=(1,2))#, how='slice')
+                    rcmcube = mcube.rechunk([16,'auto','auto'])
+                    print(rcmcube)
+                    stdspec = rcmcube.mad_std(axis=(1,2))#, how='slice')
                     stdspec.write("collapse/stdspec/{0}".format(fn.replace(suffix, "_std_spec.fits")), overwrite=True)
                     stdspec.quicklook("collapse/stdspec/pngs/{0}".format(fn.replace(suffix, "_std_spec.png")))
 

@@ -19,7 +19,7 @@ from spectral_cube.lower_dimensional_structures import Projection
 
 from pathlib import Path
 
-if os.getenv('NO_PROGRESSBAR') is None:
+if os.getenv('NO_PROGRESSBAR') is None and not (os.getenv('ENVIRON') == 'BATCH'):
     from dask.diagnostics import ProgressBar
     pbar = ProgressBar()
     pbar.register()
@@ -76,7 +76,7 @@ colnames_stats = 'min max std sum mean'.split() + ['mod'+x for x in 'min max std
 rows = []
 
 spectra_dir = basepath / "spectra"
-os.environ['TEMPDIR'] = '/blue/adamginsburg/adamginsburg/tmp/'
+os.environ['TMPDIR'] = '/blue/adamginsburg/adamginsburg/tmp/'
 
 for field in "G353.41 G008.67 G337.92 W51-E W43-MM3 G328.25 G351.77 W43-MM1 G010.62 W51-IRS2 G012.80 G333.60 W43-MM2 G327.29 G338.93".split():
     for band in (3,6):
@@ -118,18 +118,18 @@ for field in "G353.41 G008.67 G337.92 W51-E W43-MM3 G328.25 G351.77 W43-MM1 G010
                     #cube = cube.rechunk(save_to_tmp_dir=True)
                     print(cube)
 
-                    underscore = "_" if linename or suffix else ""
+                    underscore = "_" if linename or (suffix and not suffix.startswith('.')) else ""
 
-                    print('computing max(axis=(1,2))')
                     mxspecfn = spectra_dir / f"{field}_B{band}_spw{spw}_{config}{underscore}{linename}{suffix}_max.fits"
                     if not os.path.exists(mxspecfn):
+                        print('computing max(axis=(1,2))')
                         maxspec = cube.max(axis=(1,2))
                         assert not os.path.exists(mxspecfn)
                         maxspec.write(mxspecfn, overwrite=True)
 
-                    print('computing mean(axis=(1,2))')
                     mnspecfn = spectra_dir / f"{field}_B{band}_spw{spw}_{config}{underscore}{linename}{suffix}_mean.fits"
                     if not os.path.exists(mnspecfn):
+                        print('computing mean(axis=(1,2))')
                         meanspec = cube.mean(axis=(1,2))
                         assert not os.path.exists(mnspecfn)
                         meanspec.write(mnspecfn, overwrite=True)
