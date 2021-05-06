@@ -324,7 +324,7 @@ def determine_imsize(ms, field, phasecenter, spw=0, pixfraction_of_fwhm=1/4., **
     return int(dra), int(ddec), pixscale
 
 def determine_imsizes(mses, field, phasecenter, **kwargs):
-    assert isinstance(mses, list)
+    assert isinstance(mses, list),"Incorrect input to determine_imsizes"
     results = [determine_imsize(ms, field, phasecenter, **kwargs) for ms in mses]
     dra, ddec, _ = np.max(results, axis=0)
     _, _, pixscale = np.min(results, axis=0)
@@ -391,7 +391,7 @@ def test_tclean_success():
 
 
 def populate_model_column(imname, selfcal_ms, field, impars_thisiter,
-                          phasecenter, maskname, cellsize, imsize, antennae,
+                          phasecenter, maskname, antennae,
                           startmodel=''):
     # run tclean to repopulate the modelcolumn prior to gaincal
     # (force niter = 0 so we don't clean any more)
@@ -418,11 +418,8 @@ def populate_model_column(imname, selfcal_ms, field, impars_thisiter,
                      phasecenter=phasecenter,
                      outframe='LSRK',
                      veltype='radio',
-                     usemask='user',
                      mask=maskname,
                      interactive=False,
-                     cell=cellsize,
-                     imsize=imsize,
                      antenna=antennae,
                      #reffreq=reffreq,
                      startmodel=startmodel,
@@ -445,11 +442,8 @@ def populate_model_column(imname, selfcal_ms, field, impars_thisiter,
                phasecenter=phasecenter,
                outframe='LSRK',
                veltype='radio',
-               usemask='user',
                mask=maskname,
                interactive=False,
-               cell=cellsize,
-               imsize=imsize,
                antenna=antennae,
                reffreq=reffreq,
                startmodel=startmodel,
@@ -475,7 +469,6 @@ def populate_model_column(imname, selfcal_ms, field, impars_thisiter,
     #                      startmodel=modelname,
     #                      outframe='LSRK',
     #                      veltype='radio',
-    #                      usemask='user',
     #                      mask=maskname,
     #                      interactive=False,
     #                      cell=cellsize,
@@ -518,3 +511,31 @@ def populate_model_column(imname, selfcal_ms, field, impars_thisiter,
     # if not success:
     #     raise ValueError("tclean failed to restore the model {0}.model* "
     #                      "into the model column".format(imname))
+
+
+def get_non_bright_spws(vis, frequency=230.538e9):
+    """
+    From a measurement set, return all spw numbers that do not contain the specified line
+    
+    Parameters
+    ----------
+    vis : str
+        Measurement set name
+    frequency : float
+        Frequency of the line to exclude
+    """
+    
+    msmd.open(vis)
+    
+    spws_ontarget = msmd.spwsforintent('OBSERVE_TARGET#ON_SOURCE')
+    
+    spws = []
+    
+    for spwnum in spws_ontarget:
+        frqs = msmd.chanfreqs(spwnum)
+        bws = msmd.chanwidths(spwnum)
+        
+        if ((frqs.min() - bws[0]) > frequency) or ((frqs.min().max() + bws[0]) < frequency):
+            spws.append(spwnum)
+    
+    return spws
