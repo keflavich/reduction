@@ -33,778 +33,944 @@ would be the parameters used for non-bsens and for bsens data, respectively.
 If you have ONLY a non-bsens parameter key (you do not have a _bsens set
 of parameters), the bsens selfcal & imaging will use the same as the non-bsens.
 
+CONTRIBUTOR NOTE:
+    This file is to be formatted with python's "black" formatter:
+
+        black -t py27 -l 120 imaging_parameters.py
 """
 import copy
 allfields = "G008.67 G337.92 W43-MM3 G328.25 G351.77 G012.80 G327.29 W43-MM1 G010.62 W51-IRS2 W43-MM2 G333.60 G338.93 W51-E G353.41 Sgr_B2_DS".split()
 
 # set up global defaults
-imaging_parameters = {"{0}_{1}_{2}_robust{3}".format(field, band, array, robust):
-                      {'threshold': '1mJy', # RMS ~0.5-0.6 mJy
-                       'pblimit': 0.1,
-                       'niter': 100000,
-                       'robust': robust,
-                       'weighting': 'briggs',
-                       'scales': [0,3,9],
-                       'gridder': 'mosaic',
-                       'specmode': 'mfs',
-                       'deconvolver': 'mtmfs',
-                       'usemask': 'user',
-                       'nterms': 2,
-                      }
-                      for field in allfields
-                      for band in ('B3','B6')
-                      for array in ('12M', '7M12M', '7M')
-                      for robust in (-2, 0, 2)
-                     }
+imaging_parameters = {
+    "{0}_{1}_{2}_robust{3}".format(field, band, array, robust): {
+        "threshold": "1mJy",  # RMS ~0.5-0.6 mJy
+        "pblimit": 0.1,
+        "pbmask": 0.1,
+        "niter": 100000,
+        "robust": robust,
+        "weighting": "briggs",
+        "scales": [0, 3, 9],
+        "gridder": "mosaic",
+        "specmode": "mfs",
+        "deconvolver": "mtmfs",
+        "usemask": "user",
+        "nterms": 2,
+    }
+    for field in allfields
+    for band in ("B3", "B6")
+    for array in ("12M", "7M12M", "7M")
+    for robust in (-2, 0, 2, -1, 1, -0.5, 0.5)
+}
 
 # added for 7M only data: higher threshold
 for key in imaging_parameters:
-    if '_7M_' in key:
-        imaging_parameters[key]['threshold'] = '5mJy'
-    if '7M' in key:
-        imaging_parameters[key]['scales'] = [0,3,9,27]
+    if "_7M_" in key:
+        imaging_parameters[key]["threshold"] = "5mJy"
+    if "7M" in key:
+        imaging_parameters[key]["scales"] = [0, 3, 9, 27]
 
 
 imaging_parameters_nondefault = {
-# G351.77
-  'G351.77_B6_7M12M_robust0': {'threshold': {0: '4.0mJy', 1: '0.75mJy', 2: '0.50mJy', 3: '0.25mJy'},
-                               'niter': {0: 1000, 1: 3000, 2: 9000, 3: 18000},
-                               'maskname': {0: 'G351.77_B6_7M12M_robust-2.crtf',
-                                            1: 'G351.77_B6_7M12M_robust-2.crtf',
-                                            2: 'G351.77_B6_7M12M_robust-2.crtf',
-                                            3: 'G351.77_B6_7M12M_robust-2.crtf'}
-                              },
-
-   'G351.77_B6_7M12M_robust2': {'threshold': {0: '4.0mJy', 1: '0.75mJy', 2: '0.50mJy', 3: '0.25mJy'},
-                               'niter': {0: 1000, 1: 3000, 2: 9000, 3: 18000},
-                               'maskname': {0: 'G351.77_B6_7M12M_robust-2.crtf',
-                                            1: 'G351.77_B6_7M12M_robust-2.crtf',
-                                            2: 'G351.77_B6_7M12M_robust-2.crtf',
-                                            3: 'G351.77_B6_7M12M_robust-2.crtf'}
-                              },
-
-  'G351.77_B6_7M12M_robust-2': {'threshold': {0: '4.0mJy', 1: '0.75mJy', 2: '0.50mJy', 3: '0.25mJy'},
-                               'niter': {0: 1000, 1: 3000, 2: 9000, 3: 18000},
-                               'maskname': {0: 'G351.77_B6_7M12M_robust-2.crtf',
-                                            1: 'G351.77_B6_7M12M_robust-2.crtf',
-                                            2: 'G351.77_B6_7M12M_robust-2.crtf',
-                                            3: 'G351.77_B6_7M12M_robust-2.crtf'}
-                              },
-
-                                                #rms:6e-4
-   'G351.77_B6_12M_robust0': {'threshold': {0: '12e-4Jy', 1: '12e-4Jy', 2: '12e-4Jy', 3: '12e-4Jy',4: '12e-4Jy'},
-                               'niter': {0: 1000, 1: 3000, 2: 9000, 3: 18000, 4: 18000},
-                               'maskname': {0: 'G351.77_B6_12M_robust2.crtf',
-                                            1: 'G351.77_B6_12M_robust2.crtf',
-                                            2: 'G351.77_B6_12M_robust2.crtf',
-                                            3: 'G351.77_B6_12M_robust2.crtf',
-                                            4: 'G351.77_B6_12M_robust2.crtf'}
-                              },
-
-                                               #rms: 5e-4
-   'G351.77_B6_12M_robust2': {'threshold': {0: '10e-4Jy', 1: '10e-4Jy', 2: '10e-4Jy', 3: '10e-4Jy', 4: '10e-4Jy'},
-                               'niter': {0: 1000, 1: 3000, 2: 9000, 3: 18000, 4:18000},
-                               'maskname': {0: 'G351.77_B6_12M_robust2.crtf',
-                                            1: 'G351.77_B6_12M_robust2.crtf',
-                                            2: 'G351.77_B6_12M_robust2.crtf',
-                                            3: 'G351.77_B6_12M_robust2.crtf',
-                                            4: 'G351.77_B6_12M_robust2.crtf'}
-                              },
-                                                 # rms: 7.2e-4
-   'G351.77_B6_12M_robust-2': {'threshold': {0: '14.4e-4Jy', 1: '14.4e-4Jy', 2: '14.4e-4Jy', 3: '14.4e-4Jy', 4: '14.4e-4Jy'},
-                               'niter': {0: 1000, 1: 3000, 2: 9000, 3: 18000, 4:18000},
-                               'maskname': {0: 'G351.77_B6_12M_robust-2.crtf',
-                                            1: 'G351.77_B6_12M_robust-2.crtf',
-                                            2: 'G351.77_B6_12M_robust-2.crtf',
-                                            3: 'G351.77_B6_12M_robust-2.crtf',
-                                            4: 'G351.77_B6_12M_robust-2.crtf'}
-                              },
-
-
-
-
- 'G351.77_B3_12M_robust-2': {'threshold': {0: '8e-4Jy', 1: '8e-4Jy', 2: '8e-4Jy', 3: '8e-4Jy', 4: '8e-4Jy'},
-                               'niter': {0: 1000, 1: 3000, 2: 9000, 3: 18000, 4: 18000},
-                               'maskname': {0: 'G351.77_B3_12M_robust2.crtf',
-                                            1: 'G351.77_B3_12M_robust2.crtf',
-                                            2: 'G351.77_B3_12M_robust2.crtf',
-                                            3: 'G351.77_B3_12M_robust2.crtf',
-                                            4: 'G351.77_B3_12M_robust2.crtf'}
-                              },
-                                                # rms: 2.7e-4
-   'G351.77_B3_12M_robust2': {'threshold': {0: '5.4e-4Jy', 1: '5.4e-4Jy', 2: '5.4e-4Jy', 3: '5.4e-4Jy', 4: '5.4e-4Jy'},
-                               'niter': {0: 1000, 1: 3000, 2: 9000, 3: 18000, 4:18000},
-                               'maskname': {0: 'G351.77_B3_12M_robust2.crtf',
-                                            1: 'G351.77_B3_12M_robust2.crtf',
-                                            2: 'G351.77_B3_12M_robust2.crtf',
-                                            3: 'G351.77_B3_12M_robust2.crtf',
-                                            4: 'G351.77_B3_12M_robust2.crtf'}
-                              },
-  'G351.77_B3_12M_robust0': {'threshold': {0: '7e-4Jy', 1: '7e-4Jy', 2: '7e-4Jy', 3: '7e-4Jy', 4: '7e-4Jy'},
-                               'niter': {0: 1000, 1: 3000, 2: 9000, 3: 18000, 4:18000},
-                               'maskname': {0: 'G351.77_B3_12M_robust2.crtf',
-                                            1: 'G351.77_B3_12M_robust2.crtf',
-                                            2: 'G351.77_B3_12M_robust2.crtf',
-                                            3: 'G351.77_B3_12M_robust2.crtf',
-                                            4: 'G351.77_B3_12M_robust2.crtf'}
-                              },
-
-
-
-
-'G010.62_B3_12M_robust0': {'threshold': {0:'10mJy', 1: '5mJy', 2: '2.5 mJy', 3:'0.8mJy', 4:'0.2mJy',5:'0.14mJy'},
-                                 'niter':{0:700, 1:700, 2: 2000, 3: 5000, 4: 10000, 5:15000},
-                                 'maskname':{0:'G010.62_55arcsecCircle.crtf',
-                                             1:'G010_ds9_15mJy.crtf', # 
-                                             2:'G010_ds9_15mJy.crtf', # 
-                                             3:'G010_ds9_1mJy.crtf', # 
-                                             4:'G010_ds9_0.5mJy.crtf', # 
-                                             5:'G010_ds9_0.3mJy.crtf'}
-                       },
-'G010.62_B3_7M12M_robust0': {'threshold': {0:'10mJy', 1: '5mJy', 2: '2.5 mJy', 3:'0.8mJy', 4:'0.5mJy',5:'0.32mJy'},
-                                 'niter':{0:700, 1:1300, 2: 2500, 3: 5000, 4: 15000, 5:15000},
-                                 'maskname':{0:'G010.62_55arcsecCircle.crtf',
-                                             1:'G010_ds9_15mJy.crtf', # 
-                                             2:'G010_ds9_15mJy.crtf', # 
-                                             3:'G010_ds9_1mJy.crtf', # 
-                                             4:'G010_ds9_0.5mJy.crtf', # 
-                                             5:'G010_ds9_0.3mJy.crtf'}
-                       },
-'G010.62_B6_12M_robust0': {'threshold': {0:'10mJy', 1: '5mJy', 2: '2.5 mJy', 3:'0.8mJy', 4:'0.35mJy',5:'0.2mJy'},
-                                 'niter':{0:700, 1:1300, 2: 2500, 3: 5000, 4: 15000, 5:15000},
-                                 'maskname':{
-                                     0:'G010.62_bigPoly.crtf',
-                                     1:'G010_ds9_B6_20mJy.crtf', # 
-                                     2:'G010_ds9_B6_5mJy.crtf', # 
-                                     3:'G010_ds9_B6_1mJy.crtf', # 
-                                     4:'G010_ds9_B6_05mJy.crtf', # 
-                                     5:'G010.62_B6_03mJy.mask'}
-                       },
-        ##### G333.60 #####
-        # B3 12M CLEANEST CONTINUUM #
-    'G333.60_B3_12M_robust0': {'threshold': {0: '0.8mJy', 1: '0.8mJy', 2: '0.4mJy', 3: '0.2mJy', 4: '0.1mJy', 5: '0.07mJy'},
-                               'niter': {0: 3000, 1: 3000, 2: 10000, 3: 30000, 4: 90000, 5: 90000},
-                               'maskname': {0: 'mask_G333_B3_12m_0.1.crtf',
-                                            1: 'mask_G333_B3_12m_0.1.crtf',
-                                            2: 'mask_G333_B3_12m_0.03.crtf',
-                                            3: 'mask_G333_B3_12m_0.01.crtf',
-                                            4: 'mask_G333_B3_12m_0.003.crtf',
-                                                                                        5: 'mask_G333_B3_12m_0.0015.crtf'},
-                               'scales': [0,3,9,27],
-                              },
-    'G333.60_B3_12M_robust2': {'threshold': '0.07mJy', 'niter': 90000,
-                               'scales': [0,3,9],
-                               'maskname': 'mask_G333_B3_12m_0.0015.crtf',
-                              },
-    'G333.60_B3_12M_robust-2': {'threshold': '0.07mJy', 'niter': 90000,
-                                'scales': [0,3,9,27],
-                                'maskname': 'mask_G333_B3_12m_0.0015.crtf',
-                            },
-        # B3 7m12M CLEANEST CONTINUUM #
-    'G333.60_B3_7M12M_robust0': {'threshold': {0: '0.8mJy', 1: '0.8mJy', 2: '0.4mJy', 3: '0.2mJy', 4: '0.1mJy', 5: '0.07mJy'},
-                               'niter': {0: 3000, 1: 3000, 2: 10000, 3: 30000, 4: 90000, 5: 90000},
-                               'maskname': {0: 'mask_G333_B3_7m12m_0.1.crtf',
-                                            1: 'mask_G333_B3_7m12m_0.1.crtf',
-                                            2: 'mask_G333_B3_7m12m_0.05.crtf',
-                                            3: 'mask_G333_B3_7m12m_0.01.crtf',
-                                            4: 'mask_G333_B3_7m12m_0.002.crtf',
-                                                                                        5: 'mask_G333_B3_7m12m_0.0015.crtf'},
-                               'scales': [0,3,9,27],
-                              },
-    'G333.60_B3_7M12M_robust2': {'threshold': '0.07mJy', 'niter': 90000,
-                               'scales': [0,3,9],
-                               'maskname': 'mask_G333_B3_7m12m_0.0015.crtf',
-                              },
-    'G333.60_B3_7M12M_robust-2': {'threshold': '0.07mJy', 'niter': 90000,
-                                'scales': [0,3,9,27],
-                                'maskname': 'mask_G333_B3_7m12m_0.0015.crtf',
-                            },
-        # B6 12M CLEANEST CONTINUUM #
-    'G333.60_B6_12M_robust0': {'threshold': {0: '1.2mJy', 1: '1.2mJy', 2: '0.8mJy', 3: '0.4mJy', 4: '0.2mJy', 5: '0.15 mJy', 'final': '0.15 mJy'},
-                               'niter': {0: 3000, 1: 3000, 2: 6000, 3: 12000, 4: 24000, 5: 48000, 'final': 70000},
-                               'maskname': {0: 'mask_G333_B6_12m_0.1.crtf',
-                                            1: 'mask_G333_B6_12m_0.1.crtf',
-                                            2: 'mask_G333_B6_12m_0.03.crtf',
-                                            3: 'mask_G333_B6_12m_0.03.crtf',
-                                            4: 'mask_G333_B6_12m_0.01.crtf',
-                                            5: 'mask_G333_B6_12m_0.01.crtf',
-                                                                                        'final': 'mask_G333_B6_12m_final.crtf'},
-                               'scales': [0,3,9],
-                              },
-    'G333.60_B6_12M_robust2': {'threshold': '0.15mJy',
-                               'niter': 70000,
-                               'maskname': 'mask_G333_B6_12m_final.crtf',
-                               'scales': [0,3,9],
-                              },
-    'G333.60_B6_12M_robust-2': {'threshold': '0.1mJy',
-                                'niter': 70000,
-                                'maskname': 'mask_G333_B6_12m_final.crtf',
-                                'scales': [0,3,9],
-                              },
-        # B6 7M12M CLEANEST CONTINUUM #
-    'G333.60_B6_7M12M_robust0': {'threshold': {0: '1.2mJy', 1: '1.2mJy', 2: '0.8mJy', 3: '0.4mJy', 4: '0.2mJy', 5: '0.15 mJy', 'final': '0.15 mJy'},
-                               'niter': {0: 3000, 1: 3000, 2: 6000, 3: 12000, 4: 24000, 5: 48000, 'final': 70000},
-                               'maskname': {0: 'mask_G333_B6_7m12m_0.1.crtf',
-                                            1: 'mask_G333_B6_7m12m_0.1.crtf',
-                                            2: 'mask_G333_B6_7m12m_0.03.crtf',
-                                            3: 'mask_G333_B6_7m12m_0.03.crtf',
-                                            4: 'mask_G333_B6_7m12m_0.01.crtf',
-                                            5: 'mask_G333_B6_7m12m_0.01.crtf',
-                                                                                        'final': 'mask_G333_B6_7m12m_final.crtf'},
-                               'scales': [0,3,9,27],
-                              },
-    'G333.60_B6_7M12M_robust2': {'threshold': '0.15mJy',
-                               'niter': 70000,
-                               'maskname': 'mask_G333_B6_7m12m_final.crtf',
-                               'scales': [0,3,9],
-                              },
-    'G333.60_B6_7M12M_robust-2': {'threshold': '0.1mJy',
-                                'niter': 70000,
-                                'maskname': 'mask_G333_B6_7m12m_final.crtf',
-                                'scales': [0,3,9,27],
-                              },
-        #####  #####
-    'G008.67_B6_12M_robust0': {'maskname': {0: 'G008.67_B6_12M_robust0.crtf',
-                                            1: 'G008.67_B6_12M_robust0.crtf',}},
-    'G008.67_B3_12M_robust0': {'maskname': {0: 'G008.67_B6_12M_robust0.crtf',
-                                            1: 'G008.67_B6_12M_robust0.crtf',}},
-    'G012.80_B3_12M_robust0':{'threshold':{0:'10.0mJy', 1:'10mJy', 2:'5mJy', 3:'3mJy', 4:'1mJy', 5:'0.25mJy'},
-                              'niter':{0:500, 1:100, 2:1000, 3:3000, 4:5000, 5:7000}},
-    'G012.80_B3_7M12M_robust0':{'threshold':{0:'10.0mJy', 1:'10mJy', 2:'3mJy', 3:'3mJy', 4:'1mJy', 5:'0.25mJy'},
-        'niter':{0:100, 1:500, 2:1000, 3:1500, 4:3000, 5:5000},
-        'scales':{0:[0,3,9,27,100]},
-                             },
-
-    'G012.80_B3_12M_robust0':{'threshold':{0:'10.0mJy', 1:'10mJy', 2:'5mJy', 3:'3mJy', 4:'1mJy', 5:'0.25mJy'},
-        'niter':{0:500, 1:100, 2:1000, 3:3000, 4:5000, 5:7000},
-                             },
-    'G012.80_B6_12M_robust0':{'threshold':{0:'3.0mJy', 1:'2mJy', 2:'1.5mJy', 3:'1mJy', 4:'1mJy', 5:'0.25mJy'},
-        'niter':{0:0, 1:1500, 2:3000, 3:5000, 4:7000, 5:10000},
-                             },
-    'G337.92_B3_12M_robust0': {'threshold': '0.25mJy', # RMS ~0.5-0.6 mJy
-                               'scales': [0,3,9,27],
-                              },
-    'W51-IRS2_B6_12M_robust0': {'threshold':
-                                {0: '0.3mJy', 1: '0.25mJy', 2: '0.25mJy',
-                                 3: '0.25mJy', 4: '0.25mJy', 5: '0.25mJy',
-                                 6: '0.2mJy', 7: '0.2mJy', 8: '0.2mJy',
-                                },
-                                'scales': [0,3,9,27],
-                            },
-    'W51-IRS2_B3_12M_robust0': {'threshold':
-                                {0: '0.3mJy', 1: '0.2mJy', 2: '0.2mJy',
-                                 3: '0.1mJy', 4: '0.08mJy'
-                                },
-                                'scales': [0,3,9,27],
-                            },
-    # G338.93 B3 12M
-    'G338.93_B3_12M_robust0': {'threshold': {0: '0.36mJy', 1:'0.30mJy',
-        2:'0.15mJy', 'final':'0.1mJy'},
-        'niter': {0: 2000, 1:2000, 2:5000, 'final':200000}},
-    'G338.93_B3_12M_robust2': {'threshold': {'final': '0.10mJy'},
-        'niter': {'final': 200000}},
-    'G338.93_B3_12M_robust-2': {'threshold': {'final': '0.30mJy'},
-        'niter': {'final': 200000}},
-    # G338.93 B3 12M bsens
-    'G338.93_B3_12M_robust0_bsens': {'threshold': {0:'0.34mJy'},
-        'niter':{0:2000}
+    "G008.67_B6_12M_robust0": {
+        "threshold": {0: "6.5mJy", 1: "5.5mJy", 2: "4.5mJy", 3: "3.5mJy", 4: "2.9mJy", 5: "0.75mJy"},
+        "niter": {0: 1500, 1: 1500, 2: 3000, 3: 5000, 4: 50000, 5: 50000},
+        "maskname": {
+            0: "mask_G008_B6_0.crtf",
+            1: "mask_G008_B6_0.crtf",
+            2: "mask_G008_B6_1.crtf",
+            3: "mask_G008_B6_4.crtf",
+            4: "mask_G008_B6_4.crtf",
+            "final": "mask_G008_B6_4_final.crtf",
         },
-    'G338.93_B3_12M_robust2_bsens': {'threshold': {'final': '0.10mJy'},
-        'niter': {'final': 0}},
-    'G338.93_B3_12M_robust-2_bsens': {'threshold': {'final': '0.30mJy'},
-        'niter': {'final': 0}},
-    # G338.93 B3 7M12M
-    'G338.93_B3_7M12M_robust0': {'threshold': {0: '0.5mJy', 1:'0.4mJy',
-            2:'0.2mJy', 'final':'0.1mJy'},
-        'niter': {0: 2000,  1:5000, 2:8000, 'final':200000},
-        'scales': [0,3,9,27],
-            },
-    'G338.93_B3_7M12M_robust2': {'threshold': {'final':'0.1mJy'},
-        'niter': {'final':200000}},
-    'G338.93_B3_7M12M_robust-2': {'threshold': {'final':'0.1mJy'},
-        'niter': {'final':200000}},
-    'W51-E_B6_12M_robust0': {'threshold': {0: '0.3mJy', 1: '0.25mJy', 2: '0.25mJy',
-                                           3: '0.25mJy', 4: '0.25mJy', 5: '0.25mJy',
-                                           6: '0.2mJy',},
-                             'scales': [0,3,9,27],
-                            },
-    'W51-E_B3_12M_robust0': {'threshold': {0: '0.15mJy', 1: '0.15mJy',
-                                           2: '0.1mJy', 3: '0.09mJy',
-                                           4: '0.09mJy', 5: '0.08mJy',
-                                           6: '0.07mJy'},
-                             'scales': [0,3,9,27],
-                            },
-    'W51-E_B3_12M_robust2': {'threshold': '3mJy',
-                             'scales': [0,3,9,27],
-                            },
-    'W51-E_B3_12M_robust-2': {'threshold': '1mJy',
-                              'scales': [0,3,9],
-                            },
-    'W51-E_B6_7M12M_robust0': {'threshold': '3mJy', # RMS ~ ??
-                               'scales': [0,3,9,27],
-                              },
-    'W51-E_B3_7M12M_robust0': {'threshold': '1mJy', # RMS ~ ??
-                               'scales': [0,3,9,27],
-                              },
-       #W43-MM2 B6
-    'W43-MM2_B6_12M_robust0': {'threshold': {0: '2.0mJy', 1: '2.0mJy', 2: '0.7mJy', 3: '0.5mJy', 4: '0.35mJy', 5: '0.25mJy', 'final': '0.35mJy'},
-                               'niter': {0: 1000, 1: 3000, 2: 10000, 3: 12000, 4: 15000, 5: 15000, 'final': 22000},
-                               'scales': [0,3,9,27],
-                               'maskname': {'final':''},
-                               'usemask': {'final':'pb'},
-                              },
-    'W43-MM2_B6_7M12M_robust0': {'threshold': {0: '2.0mJy', 1: '2.0mJy', 2: '1.0mJy', 3: '0.5mJy', 4: '0.4mJy', 'final': '0.5mJy'},
-                               'niter': {0: 1000, 1: 5000, 2: 10000, 3: 10000, 4: 10000, 'final': 25000},
-                               'scales': {0: [0,3,9,27], 1: [0,3,9,27], 2: [0,3,9,27], 3: [0,3,9,27], 4: [0,3,9,27], 'final': [0,3,9,27,81]},
-                               'maskname': {'final':''},
-                               'usemask': {'final':'pb'},
-                              },
-
-       #W43-MM3 B6
-    'W43-MM3_B6_12M_robust0': {'threshold': {0: '1.0mJy', 1: '1.0mJy', 2: '0.25mJy', 3: '0.25mJy', 4: '0.25mJy', 5: '0.25mJy', 'final': '0.23mJy'},
-                               'niter': {0: 1000, 1: 3000, 2: 12000, 3: 12000, 4: 12000, 5: 15000, 'final': 18000},
-                               'scales': [0,3,9,27],
-                               'maskname': {'final':''},
-                               'usemask': {'final':'pb'},
-                              },
-    'W43-MM3_B6_7M12M_robust0': {'threshold': {0: '1.0mJy', 1: '1.0mJy', 2: '0.7mJy', 3: '0.35mJy', 4: '0.35mJy', 'final': '0.5mJy'},
-                               'niter': {0: 1000, 1: 5000, 2: 10000, 3: 10000, 4: 10000, 'final': 10000},
-                               'scales': {0: [0,3,9,27], 1: [0,3,9,27], 2: [0,3,9,27], 3: [0,3,9,27], 4: [0,3,9,27], 'final': [0,3,9,27,54]},
-                               'maskname': {'final':''},
-                               'usemask': {'final':'pb'},
-                              },
-       #W43-MM1 B3
-    'W43-MM1_B3_12M_robust0': {'threshold': {0: '1.0mJy', 1: '0.25mJy', 2: '0.15mJy', 3: '0.1mJy', 4: '0.1mJy', 'final': '0.12mJy'},
-                               'niter': {0: 1000, 1: 9000, 2: 15000, 3: 15000, 4: 17000, 'final': 25000},
-
-                               'scales': {0: [0,3,9,27], 1: [0,3,9,27], 2: [0,3,9,27], 3: [0,3,9,27], 4: [0,3,9,27], 'final': [0,3,9,27,81]},
-                               'maskname': {'final':''},
-                               'usemask': {'final':'pb'},
-                              },
-    'W43-MM1_B3_7M12M_robust0': {'threshold': {0: '1.0mJy', 1: '1.0mJy', 2: '0.23mJy', 3: '0.15mJy', 4: '0.1mJy', 'final': '0.05mJy'},
-                                 'niter': {0: 1000, 1: 9000, 2: 13000, 3: 15000, 4: 17000, 'final': 26000},
-                                 'scales': {0: [0,3,9,27], 1: [0,3,9,27], 2: [0,3,9,27], 3: [0,3,9,27], 4: [0,3,9,27], 'final': [0,9,27,81,162]},
-                                 'maskname': {'final':''},
-                                 'usemask': {'final':'pb'},
-                                },
-       #W43-MM2 B3
-    'W43-MM2_B3_12M_robust0': {'threshold': {0: '0.2mJy', 1: '0.5mJy', 2: '0.1mJy', 3: '0.1mJy', 4: '0.1mJy', 'final': '0.12mJy'},
-                               'niter': {0: 9000, 1: 10000, 2: 16000, 3: 16000, 4: 18000, 'final': 25000},
-                               'scales': {0: [0,3,9,27], 1: [0,3,9,27], 2: [0,3,9,27], 3: [0,3,9,27], 4: [0,3,9,27], 'final': [0,9,27,81,162]},
-                               'maskname': {'final':''},
-                               'usemask': {'final':'pb'},
-                              },
-    'W43-MM2_B3_7M12M_robust0': {'threshold': {0: '0.5mJy', 1: '1.0mJy', 2: '0.5mJy', 3: '0.2mJy', 4: '0.08mJy'},
-                                 'niter': {0: 9000, 1: 10000, 2: 12000, 3: 15000, 4: 20000},
-                                 'scales': {0: [0,3,9,27], 1: [0,3,9,27], 2: [0,3,9,27], 3: [0,3,9,27], 4: [0,3,9,27], 'final': [0,9,27,81,162]},
-                                 'maskname': {'final':''},
-                                 'usemask': {'final':'pb'},
-                                },
-       #W43-MM3 B3
-    'W43-MM3_B3_12M_robust0': {'threshold': {0: '1.0mJy', 1: '0.75mJy', 2: '0.15mJy', 3: '0.1mJy', 4: '0.1mJy', 'final': '0.11mJy'},
-                               'niter': {0: 1000, 1: 6000, 2: 12000, 3: 15000, 4: 15000, 'final': 24000},
-                               'scales': {0: [0,3,9,27], 1: [0,3,9,27], 2: [0,3,9,27], 3: [0,3,9,27], 4: [0,3,9,27], 'final': [0,3,9,27,81]},
-                               'maskname': {'final':''},
-                               'usemask': {'final':'pb'},
-                              },
-    'W43-MM3_B3_7M12M_robust0': {'threshold': {0: '1.0mJy', 1: '1.0mJy', 2: '0.5mJy', 3: '0.2mJy', 4: '0.1mJy', 'final': '0.04mJy'},
-                               'niter': {0: 3000, 1: 8000, 2: 15000, 3: 17000, 4: 20000, 'final': 25000},
-                               'scales': {0: [0,3,9,27], 1: [0,3,9,27], 2: [0,3,9,27], 3: [0,3,9,27], 4: [0,3,9,27], 'final': [0,9,27,81,162]},
-                               'maskname': {'final':''},
-                               'usemask': {'final':'pb'},
-                              },
-
-       #12M of band 3
-    'G353.41_B3_12M_robust-2': {'threshold': '0.5mJy', # 2*RMS
-                             'scales': [0,3,9,27],
-                            },
-    'G353.41_B3_12M_robust0': {'threshold': '0.36mJy', # 2*RMS
-                             'scales': [0,3,9,27],
-                            },
-    #'G353.41_B3_12M_robust0.5': {'threshold': '0.26mJy', # 2*RMS
-    #                         'scales': [0,3,9,27],
-    #                        },
-    'G353.41_B3_12M_robust2': {'threshold': '0.28mJy', # 2*RMS
-                             'scales': [0,3,9,27],
-                            },
-    #7M12M of band 3
-    'G353.41_B3_7M12M_robust-2': {'threshold': '0.52mJy', # 2*RMS
-                             'scales': [0,3,9,27],
-                            },
-    'G353.41_B3_7M12M_robust0': {'threshold': '0.4mJy', # 2*RMS
-                             'scales': [0,3,9,27],
-                            },
-    #'G353.41_B3_7M12M_robust0.5': {'threshold': '0.36mJy', # 2*RMS
-    #                         'scales': [0,3,9,27],
-    #                        },
-    'G353.41_B3_7M12M_robust2': {'threshold': '0.42mJy', # 2*RMS
-                             'scales': [0,3,9,27],
-                            },
-    #12M of band 6
-    'G353.41_B6_12M_robust-2': {'threshold': '1.4mJy', # 2*RMS
-                             'scales': [0,3,9],
-                            },
-    'G353.41_B6_12M_robust0': {'threshold': '1.04mJy', # 2*RMS
-                             'scales': [0,3,9],
-                            },
-    #'G353.41_B6_12M_robust0.5': {'threshold': '0.74mJy', # 2*RMS
-    #                         'scales': [0,3,9],
-    #                        },
-    'G353.41_B6_12M_robust2': {'threshold': '0.74mJy', # 2*RMS
-                             'scales': [0,3,9],
-                            },
-    #7M12M of band 6
-    'G353.41_B6_7M12M_robust-2': {'threshold': '1.4mJy', # 2*RMS
-                             'scales': [0,3,9],
-                            },
-    'G353.41_B6_7M12M_robust0': {'threshold': '1.06mJy', # 2*RMS
-                             'scales': [0,3,9],
-                            },
-    #'G353.41_B6_7M12M_robust0.5': {'threshold': '0.8mJy', # 2*RMS
-    #                         'scales': [0,3,9],
-    #                        },
-    'G353.41_B6_7M12M_robust2': {'threshold': '0.82mJy', # 2*RMS
-                             'scales': [0,3,9],
-                            },
-    # G327.29
-    # G327.29 B3 12M selfcal
-    'G327.29_B3_12M_robust0': {'threshold': {0: '1.5mJy', 1: '0.6mJy', 
-        2: '0.5mJy', 'final':'0.4mJy'},
-        'niter': {0: 1000, 1:2000, 2:5000, 'final':200000},
-        'scales': [0,3,9,27],
+    },
+    "G008.67_B6_12M_robust0_bsens": {
+        "threshold": {0: "7.5mJy", 1: "6.5mJy", 2: "5.5mJy", 3: "4.5mJy", 4: "3.25mJy", 5: "0.5mJy"},
+        "niter": {0: 1500, 1: 1500, 2: 3000, 3: 5000, 4: 50000, 5: 50000},
+        "maskname": {
+            0: "mask_G008_B6_0.crtf",
+            1: "mask_G008_B6_0.crtf",
+            2: "mask_G008_B6_1.crtf",
+            3: "mask_G008_B6_1.crtf",
+            4: "mask_G008_B6_4.crtf",
+            "final": "mask_G008_B6_4_final.crtf",
         },
-    'G327.29_B3_12M_robust-2': {'threshold': {'final': '0.4mJy'},
-        'niter': {'final': 200000},
-        'scales': [0,3,9,27]
+    },
+    "G008.67_B6_7M12M_robust0": {
+        "threshold": {0: "6.0mJy", 1: "5.0mJy", 2: "4.0mJy", 3: "3.5mJy", 4: "2.9mJy", 5: "0.75mJy"},
+        "niter": {0: 1500, 1: 1500, 2: 3000, 3: 5000, 4: 50000, 5: 50000},
+        "maskname": {
+            0: "mask_G008_B6_0.crtf",
+            1: "mask_G008_B6_0.crtf",
+            2: "mask_G008_B6_1.crtf",
+            3: "mask_G008_B6_4.crtf",
+            4: "mask_G008_B6_4_final.crtf",
+            "final": "mask_G008_B6_4_final.crtf",
         },
-    'G327.29_B3_12M_robust2': {'threshold': {'final': '0.4mJy'},
-        'niter': {'final': 200000},
-        'scales': [0,3,9,27]
+    },
+    "G008.67_B3_12M_robust0": {
+        "threshold": {0: "2.5mJy", 1: "2.0mJy", 2: "1.5mJy", 3: "1.0mJy", 4: "0.7mJy", 5: "0.3mJy"},
+        "niter": {0: 700, 1: 700, 2: 2000, 3: 5000, 4: 50000, 5: 50000},
+        "maskname": {
+            0: "mask_G008_B3_1.crtf",
+            1: "mask_G008_B3_2.crtf",
+            2: "mask_G008_B3_3.crtf",
+            3: "mask_G008_B3_3.crtf",
+            4: "mask_G008_B3_3.crtf",
+            "final": "mask_G008_B3_4.crtf",
         },
-    # G327.29 B3 12M bsens selfcal
-    # G327.29 B3 7M12M no selfcal
-    #'G327.29_B3_7M12M_robust0': {'threshold': {0: '1.5mJy'},
-    #    'niter': {0: 200000},
-    #    'maskname':{0:'G327.29_B3_noselfcal_7M12M.crtf'},
-    #    'scales': [0,3,9,27]
-    #    },
-    #'G327.29_B3_7M12M_robust-2': {'threshold': {0: '0.5mJy'},
-    #    'niter': {0: 200000},
-    #    'maskname':{0:'G327.29_B3_noselfcal_7M12M.crtf'},
-    #    'scales': [0,3,9,27]
-    #    },
-    #'G327.29_B3_7M12M_robust2': {'threshold': {0: '0.5mJy'},
-    #    'niter': {0: 100000},
-    #    'maskname':{0:'G327.29_B3_noselfcal_7M12M.crtf'},
-    #    'scales': [0,3,9,27]
-    #    },
-    # G327.29 B3 7M12M selfcal
-    'G327.29_B3_7M12M_robust0': {'threshold': {0: '2.0mJy', 1:'1.8mJy', 
-        'final': '1.5mJy'},
-        'niter': {0: 5000, 1:5000, 'final':200000},
-        'scales': [0,3,9,27]
+    },
+    "G008.67_B3_7M12M_robust0": {
+        "threshold": {0: "5.0mJy", 1: "4.5mJy", 2: "4.0mJy", 3: "4.5mJy", 4: "2.5mJy", 5: "0.4mJy"},
+        "niter": {0: 1000, 1: 1000, 2: 2000, 3: 5000, 4: 25000, 5: 50000},
+        "maskname": {
+            0: "mask_G008_B3_7M12M_0.crtf",
+            1: "mask_G008_B3_7M12M_1.crtf",
+            2: "mask_G008_B3_7M12M_2.crtf",
+            3: "mask_G008_B3_7M12M_3.crtf",
+            4: "mask_G008_B3_7M12M_4.crtf",
+            "final": "mask_G008_B3_7M12M_4.crtf",
         },
-    'G327.29_B3_7M12M_robust-2': {'threshold': {'final': '0.5mJy'},
-        'niter': {'final': 200000},
-        'scales': [0,3,9,27]
+    },
+    "G008.67_B3_12M_robust0_bsens": {
+        "threshold": {0: "3.0mJy", 1: "2.5mJy", 2: "1.5mJy", 3: "0.8mJy", 4: "0.3mJy", 5: "0.16mJy"},
+        "niter": {0: 1200, 1: 1500, 2: 3000, 3: 5000, 4: 70000, 5: 90000},
+        "maskname": {
+            0: "mask_G008_B3_1.crtf",
+            1: "mask_G008_B3_2.crtf",
+            2: "mask_G008_B3_2.crtf",
+            3: "mask_G008_B3_2_bsens.crtf",
+            4: "mask_G008_B3_2_bsens.crtf",
+            5: "mask_G008_B3_final_bsens.crtf",
+            "final": "mask_G008_B3_final_bsens.crtf",
         },
-    'G327.29_B3_7M12M_robust2': {'threshold': {'final': '0.5mJy'},
-        'niter': {'final': 100000},
-        'scales': [0,3,9,27]
+    },
+    "G010.62_B3_7M12M_robust0": {
+        "threshold": {0: "10mJy", 1: "5mJy", 2: "2.5 mJy", 3: "0.8mJy", 4: "0.5mJy", 5: "0.32mJy"},
+        "niter": {0: 700, 1: 1300, 2: 2500, 3: 5000, 4: 15000, 5: 15000},
+        "maskname": {
+            0: "G010.62_55arcsecCircle.crtf",
+            1: "G010_ds9_15mJy.crtf",
+            2: "G010_ds9_15mJy.crtf",
+            3: "G010_ds9_1mJy.crtf",
+            4: "G010_ds9_0.5mJy.crtf",
+            5: "G010_ds9_0.3mJy.crtf",
         },
-    # G327.29 B6 12M no selfcal imaging
-    #'G327.29_B6_12M_robust0': {'threshold': {0:'0.5mJy'},
-    #    'niter': {0:10000},
-    #    'maskname':{0:'G327.29_B6_noselfcal_12M.crtf'},
-    #    'scales': [0,3,9,27]
-    #    },
-    #'G327.29_B6_12M_robust2': {'threshold':{0:'1.0mJy'},
-    #    'niter': {0: 20000},
-    #    'maskname':{0:'G327.29_B6_noselfcal_12M.crtf'}
-    #    },
-    #'G327.29_B6_12M_robust-2': {'threshold': {0:'1.0mJy'},
-    #    'niter': {0: 20000},
-    #    'maskname':{0:'G327.29_B6_noselfcal_12M.crtf'}
-    #    },
-    # G327.29 B6 12M selfcal
-    'G327.29_B6_12M_robust0': {'threshold': {0: '2.0mJy', 1:'1.5mJy', 
-        2:'1.0mJy', 3:'1.0mJy', 4:'0.8mJy', 5:'0.5mJy', 'final':'0.5mJy'},
-        'niter': {0: 1000, 1:1000, 2:5000, 3:8000, 4:10000, 5:10000,
-            'final':20000},
-        'scales': [0,3,9,27]
+    },
+    "G333.60_B3_12M_robust0": {
+        "threshold": {0: "0.8mJy", 1: "0.8mJy", 2: "0.4mJy", 3: "0.2mJy", 4: "0.1mJy", 5: "0.07mJy", 6: "0.07mJy"},
+        "niter": {0: 3000, 1: 3000, 2: 10000, 3: 30000, 4: 90000, 5: 90000, 6: 90000},
+        "maskname": {
+            0: "mask_G333_B3_12m_0.1.crtf",
+            1: "mask_G333_B3_12m_0.1.crtf",
+            2: "mask_G333_B3_12m_0.03.crtf",
+            3: "mask_G333_B3_12m_0.01.crtf",
+            4: "mask_G333_B3_12m_0.003.crtf",
+            5: "mask_G333_B3_12m_0.0015.crtf",
+            6: "mask_G333_B3_12m_0.0015.crtf",
         },
-    'G327.29_B6_12M_robust2': {'threshold': {'final': '1.0mJy'},
-        'niter': {'final': 20000}},
-    'G327.29_B6_12M_robust-2': {'threshold': {'final': '1.0mJy'},
-        'niter': {'final': 20000}},
-    # G327.29 B6 7M12M no selfcal imaging
-    #'G327.29_B6_7M12M_robust0': {'threshold': {0:'0.5mJy'},
-    #    'niter': {0:200000},
-    #    'maskname':{0:'G327.29_B6_noselfcal_7M12M.crtf'},
-    #    'scales': [0,3,9,27]
-    #    },
-    #'G327.29_B6_7M12M_robust2': {'threshold':{0:'1.0mJy'},
-    #    'niter': {0: 20000},
-    #    'maskname':{0:'G327.29_B6_noselfcal_7M12M.crtf'}
-    #    },
-    #'G327.29_B6_7M12M_robust-2': {'threshold': {0:'1.0mJy'},
-    #    'niter': {0: 20000},
-    #    'maskname':{0:'G327.29_B6_noselfcal_7M12M.crtf'}
-    #    },
-    # G327.29 B6 7M12M selfcal
-    'G327.29_B6_7M12M_robust0': {'threshold': {0: '2.0mJy', 1:'1.5mJy', 
-            2:'1.0mJy', 3:'0.8mJy', 4:'0.8mJy', 5:'0.5mJy'},
-        'niter': {0: 1000, 1:1000, 2:5000, 3:8000, 4:10000, 5:200000},
-        'scales': [0,3,9,27]
+        "scales": [0, 3, 9, 27],
+    },
+    "G333.60_B3_12M_robust2": {
+        "threshold": "0.07mJy",
+        "niter": 90000,
+        "scales": [0, 3, 9],
+        "maskname": "mask_G333_B3_12m_0.0015.crtf",
+    },
+    "G333.60_B3_12M_robust-2": {
+        "threshold": "0.07mJy",
+        "niter": 90000,
+        "scales": [0, 3, 9, 27],
+        "maskname": "mask_G333_B3_12m_0.0015.crtf",
+    },
+    "G333.60_B3_7M12M_robust0": {
+        "threshold": {0: "0.8mJy", 1: "0.8mJy", 2: "0.4mJy", 3: "0.2mJy", 4: "0.1mJy", 5: "0.07mJy"},
+        "niter": {0: 3000, 1: 3000, 2: 10000, 3: 30000, 4: 90000, 5: 90000},
+        "maskname": {
+            0: "mask_G333_B3_7m12m_0.1.crtf",
+            1: "mask_G333_B3_7m12m_0.1.crtf",
+            2: "mask_G333_B3_7m12m_0.05.crtf",
+            3: "mask_G333_B3_7m12m_0.01.crtf",
+            4: "mask_G333_B3_7m12m_0.002.crtf",
+            5: "mask_G333_B3_7m12m_0.0015.crtf",
         },
-    'G327.29_B6_7M12M_robust2': {'threshold': {5: '1.0mJy'},
-        'niter': {5: 20000}},
-    'G327.29_B6_7M12M_robust-2': {'threshold': {5: '1.0mJy'},
-        'niter': {5: 20000}},
-'G010.62_B3_7M12M_robust0': {'threshold': {0:'7mJy', 1: '3mJy', 2: '1.5 mJy', 3:'0.7mJy', 4:'0.35mJy'},
-                                 'niter':{0:700, 1:1300, 2: 2500, 3: 5000, 4: 10000},
-                                 'maskname':{0:'G010.62_centralBox_50_30.reg',
-                                             1:'G010.62_B3_50mJy.crtf', #
-                                             2:'G010.62_B3_15mJy.crtf', #
-                                             3:'G010.62_B3_05mJy.crtf', #
-                                             4:'G010.62_B3_03mJy.crtf', #
-                             }},
-'G010.62_B3_12M_robust0': {'threshold': {0:'10mJy', 1: '5mJy', 2: '2.5 mJy', 3:'1.0mJy', 4:'0.5mJy',5:'0.3mJy'},
-                                 'niter':{0:700, 1:1300, 2: 2500, 3: 5000, 4: 10000,5:10000},
-                                 'maskname':{0:'G010.62_centralBox_50_30.crtf',
-                                             1:'G010.62_B3_50mJy.crtf', #
-                                             2:'G010.62_B3_15mJy.crtf', #
-                                             3:'G010.62_B3_05mJy.crtf', #
-                                             4:'G010.62_B3_03mJy.crtf', #
-                                             5:'G010.62_B3_01mJy.crtf'
-                                         }},
-'G010.62_B6_12M_robust0': {'threshold': {0:'10mJy', 1: '5mJy', 2: '2.5 mJy', 3:'1.0mJy', 4:'0.5mJy',5:'0.3mJy'},
-                                 'niter':{0:700, 1:1300, 2: 2500, 3: 5000, 4: 10000,5:10000},
-                                 'maskname':{0:'G010.62_centralBox_50_30.crtf',
-                                             1:'G010.62_B3_50mJy.crtf', # Using Band 3 masks for the moment
-                                             2:'G010.62_B3_15mJy.crtf', #
-                                             3:'G010.62_B3_05mJy.crtf', #
-                                             4:'G010.62_B3_03mJy.crtf', #
-                                             5:'G010.62_B3_01mJy.crtf'
-                                         }},
-
-
-# G351.77                                        6.64e-3
-  'G351.77_B6_7M_robust0': {'threshold': {0: '12.0mJy', 1: '12mJy', 2: '3mJy', 3: '0.25mJy', 4: '0.25mJy'},
-                               'niter': {0: 1000, 1: 3000, 2: 9000, 3: 18000, 4: 25000},
-                               'scales':[0,3],
-                               'maskname': {0: 'G351.77_B6_7M12M_iter1.crtf',
-                                            1: 'G351.77_B6_7M_iter1.crtf',
-                                            2: 'G351.77_B6_7M_iter1.crtf',
-                                            3: 'G351.77_B6_7M_iter1.crtf',
-                                            4: 'G351.77_B6_7M_iter1.crtf'}
-                              },
-                                            # rms = 5e-4 Jy/beam
-   'G351.77_B6_7M12M_robust0': {'threshold': {0: '10.0mJy', 1: '10.0mJy', 2: '5.0mJy', 3: '1.0mJy', 4: '1.0mJy','final':'1.0mJy'},
-                               'niter': {0: 1000, 1: 3000, 2: 9000, 3: 18000, 4: 25000},
-                               'scales':[0,3],
-                              'maskname': {0: 'G351.77_B6_7M12M_iter1.crtf',
-                                            1: 'G351.77_B6_7M_iter1.crtf',
-                                            2: 'G351.77_B6_7M_iter1.crtf',
-                                            3: 'G351.77_B6_7M_iter1.crtf',
-                                            4: 'G351.77_B6_7M_iter1.crtf',
-                                            'final': 'G351.77_B6_7M12M_finaliter.crtf'}
-                         },
-
-   'G351.77_B6_7M12M_robust2': {'threshold': {0: '4.0mJy', 1: '0.75mJy', 2: '0.50mJy', 3: '0.25mJy', 4: '0.25mJy','final':'1.0mJy'},
-                               'niter': {0: 1000, 1: 3000, 2: 9000, 3: 18000, 4: 25000},
-                               'scales':[0,3],
-                               'maskname': {0: 'G351.77_B6_12M_robust2.crtf',
-                                            1: 'G351.77_B6_12M_robust2.crtf',
-                                            2: 'G351.77_B6_12M_robust2.crtf',
-                                            3: 'G351.77_B6_12M_robust2.crtf',
-                                            4: 'G351.77_B6_12M_robust2.crtf',
-                                            'final': 'G351.77_B6_7M12M_finaliter.crtf'}
-                              },
-  'G351.77_B6_7M12M_robust-2': {'threshold': {0: '10.0mJy', 1: '5mJy', 2: '5.0mJy', 3: '1.0mJy', 4: '1.0mJy','final':'1.0mJy'},
-                               'niter': {0: 1000, 1: 3000, 2: 9000, 3: 18000, 4: 18000},
-                               'scales':[0,3],
-                               'maskname': {0: 'G351.77_B6_7M_iter1.crtf',
-                                            1: 'G351.77_B6_7M_iter1.crtf',
-                                            2: 'G351.77_B6_7M_iter1.crtf',
-                                            3: 'G351.77_B6_7M_iter1.crtf',
-                                            4: 'G351.77_B6_7M12M_finaliter.crtf',
-                                            'final': 'G351.77_B6_7M12M_finaliter.crtf'}
-                              },
-                                                #rms:6e-4
-   'G351.77_B6_12M_robust0': {'threshold': {0: '12e-4Jy', 1: '12e-4Jy', 2: '12e-4Jy', 3: '12e-4Jy',4: '12e-4Jy'},
-                               'niter': {0: 1000, 1: 3000, 2: 9000, 3: 18000, 4: 18000},
-                               'maskname': {0: 'G351.77_B6_12M.crtf',
-                                            1: 'G351.77_B6_12M.crtf',
-                                            2: 'G351.77_B6_12M.crtf',
-                                            3: 'G351.77_B6_12M.crtf',
-                                            4: 'G351.77_B6_12M.crtf',
-                                            'final':'G351.77_B6_12M_final.crtf'}
-                              },
-
-
-                                               #rms: 5e-4
-   'G351.77_B6_12M_robust2': {'threshold': {0: '10e-4Jy', 1: '10e-4Jy', 2: '10e-4Jy', 3: '10e-4Jy', 4: '10e-4Jy'},
-                               'niter': {0: 1000, 1: 3000, 2: 9000, 3: 18000, 4:18000},
-                               'maskname': {0: 'G351.77_B6_12M.crtf',
-                                            1: 'G351.77_B6_12M.crtf',
-                                            2: 'G351.77_B6_12M.crtf',
-                                            3: 'G351.77_B6_12M.crtf',
-                                            4: 'G351.77_B6_12M.crtf',
-                                            'final':'G351.77_B6_12M_final.crtf'}
-                              },
-                                                 # rms: 7.2e-4
-   'G351.77_B6_12M_robust-2': {'threshold': {0: '14.4e-4Jy', 1: '14.4e-4Jy', 2: '14.4e-4Jy', 3: '14.4e-4Jy', 4: '14.4e-4Jy'},
-                               'niter': {0: 1000, 1: 3000, 2: 9000, 3: 18000, 4:18000},
-                               'maskname': {0: 'G351.77_B6_12M.crtf',
-                                            1: 'G351.77_B6_12M.crtf',
-                                            2: 'G351.77_B6_12M.crtf',
-                                            3: 'G351.77_B6_12M.crtf',
-                                            4: 'G351.77_B6_12M.crtf',
-                                            'final':'G351.77_B6_12M_final.crtf'}
-                              },
-
-  'G351.77_B3_12M_robust-2': {'threshold': {0: '8e-4Jy', 1: '8e-4Jy', 2: '8e-4Jy', 3: '8e-4Jy', 4: '8e-4Jy'},
-                               'niter': {0: 1000, 1: 3000, 2: 9000, 3: 18000, 4: 18000},
-                               'maskname': {0: 'G351.77_B3_12M_robust2_bsens.crtf',
-                                            1: 'G351.77_B3_12M_robust2_bsens.crtf',
-                                            2: 'G351.77_B3_12M_robust2_bsens.crtf',
-                                            3: 'G351.77_B3_12M_robust2_bsens.crtf',
-                                            4: 'G351.77_B3_12M_robust2_bsens.crtf'}
-                              },
-                                                # rms: 2.7e-4 for bsens # rms : 1.5e-4
-#   'G351.77_B3_12M_robust2': {'threshold': {0: '5.4e-4Jy', 1: '5.4e-4Jy', 2: '5.4e-4Jy', 3: '5.4e-4Jy', 4: '5.4e-4Jy'},
-   'G351.77_B3_12M_robust2': {'threshold': {0: '3e-4Jy', 1: '3e-4Jy', 2: '3e-4Jy', 3: '3e-4Jy', 4: '3e-4Jy'},
-                               'niter': {0: 1000, 1: 3000, 2: 9000, 3: 18000, 4:18000},
-                               'maskname': {0: 'G351.77_B3_12M_robust2_bsens.crtf',
-                                            1: 'G351.77_B3_12M_robust2_bsens.crtf',
-                                            2: 'G351.77_B3_12M_robust2_bsens.crtf',
-                                            3: 'G351.77_B3_12M_robust2_bsens.crtf',
-                                            4: 'G351.77_B3_12M_robust2_bsens.crtf'}
-                              },
-#  'G351.77_B3_12M_robust0': {'threshold': {0: '7e-4Jy', 1: '7e-4Jy', 2: '7e-4Jy', 3: '7e-4Jy', 4: '7e-4Jy'},
-  'G351.77_B3_12M_robust0': {'threshold': {0: '3e-4Jy', 1: '3e-4Jy', 2: '3e-4Jy', 3: '3e-4Jy', 4: '3e-4Jy'},
-                               'niter': {0: 1000, 1: 3000, 2: 9000, 3: 18000, 4:18000},
-                               'maskname': {0: 'G351.77_B3_12M_robust2_bsens.crtf',
-                                            1: 'G351.77_B3_12M_robust2_bsens.crtf',
-                                            2: 'G351.77_B3_12M_robust2_bsens.crtf',
-                                            3: 'G351.77_B3_12M_robust2_bsens.crtf',
-                                            4: 'G351.77_B3_12M_robust2_bsens.crtf'}
-                              },
-#  'G351.77_B3_7M12M_robust-2': {'threshold': {0: '8e-4Jy', 1: '8e-4Jy', 2: '8e-4Jy', 3: '8e-4Jy', 4: '8e-4Jy'},
-#  rms = 1.6 e-4Jy/b
-  'G351.77_B3_7M12M_robust-2': {'threshold': {0: '3.2e-4Jy', 1: '3.2e-4Jy', 2: '3.2e-4Jy', 3: '3.2e-4Jy', 4: '3.2e-4Jy'},
-                               'niter': {0: 1000, 1: 3000, 2: 9000, 3: 18000, 4: 18000},
-                               'scales': [0,3],
-                               'maskname': {0: 'G351.77_B3_7M12M_robust2_bsens.crtf',
-                                            1: 'G351.77_B3_7M12M_robust2_bsens.crtf',
-                                            2: 'G351.77_B3_7M12M_robust2_bsens.crtf',
-                                            3: 'G351.77_B3_7M12M_robust2_bsens.crtf',
-                                            4: 'G351.77_B3_7M12M_robust2_bsens.crtf'}
-                              },
-                                                # rms: 2.7e-4
-#   'G351.77_B3_7M12M_robust2': {'threshold': {0: '5.4e-4Jy', 1: '5.4e-4Jy', 2: '5.4e-4Jy', 3: '5.4e-4Jy', 4: '5.4e-4Jy'},
-# rms ~ 0.9e-5
-   'G351.77_B3_7M12M_robust2': {'threshold': {0: '1.8e-4Jy', 1: '1.8e-4Jy', 2: '1.8e-4Jy', 3: '1.8e-4Jy', 4: '1.8e-4Jy'},
-                               'niter': {0: 1000, 1: 3000, 2: 9000, 3: 18000, 4:18000},
-                               'scales': [0,3],                        
-                               'maskname': {0: 'G351.77_B3_7M12M_robust2_bsens.crtf',
-                                            1: 'G351.77_B3_7M12M_robust2_bsens.crtf',
-                                            2: 'G351.77_B3_7M12M_robust2_bsens.crtf',
-                                            3: 'G351.77_B3_7M12M_robust2_bsens.crtf',
-                                            4: 'G351.77_B3_7M12M_robust2_bsens.crtf'}
-                              },
-#rms ~1e-4 Jy/b
-  'G351.77_B3_7M12M_robust0': {'threshold': {0: '2e-4Jy', 1: '2e-4Jy', 2: '2e-4Jy', 3: '2e-4Jy', 4: '2e-4Jy'},
-# no bsens
-#  'G351.77_B3_7M12M_robust0': {'threshold': {0: '7e-4Jy', 1: '7e-4Jy', 2: '7e-4Jy', 3: '7e-4Jy', 4: '7e-4Jy'},
-                               'niter': {0: 1000, 1: 3000, 2: 9000, 3: 9000, 4:9000},
-                               'scales': [0,3],
-                               'maskname': {0: 'G351.77_B3_7M12M_robust2_bsens.crtf',
-                                            1: 'G351.77_B3_7M12M_robust2_bsens.crtf',
-                                            2: 'G351.77_B3_7M12M_robust2_bsens.crtf',
-                                            3: 'G351.77_B3_7M12M_robust2_bsens.crtf',
-                                            4: 'G351.77_B3_7M12M_robust2_bsens.crtf'}
-                              },
-
-
-
-# G328.25 B6
-#...............
-    'G328.25_B6_7M12M_robust0': {'threshold': {0: '5mJy', 1: '2mJy', 2: '1.5mJy', 3: '1.2mJy',4:'1.2mJy'},
-                           # rms:                   2.3e-3     1e-3     7e-4         6e-4        6e-4
-                                 'niter': {0: 1000, 1: 3000, 2: 9000, 3: 18000,4:18000},
-                                 'maskname': {0: 'G328_B6_clean_robust0.crtf',
-                                              1: 'G328_B6_clean_robust0.crtf',
-                                              2: 'G328_B6_clean_robust0.crtf',
-                                              3: 'G328_B6_clean_robust0.crtf',
-                                              4:'G328_B6_clean_robust0.crtf'}},
-                                              
-    'G328.25_B6_7M12M_robust2': {'threshold': {0: '8.0mJy', 1: '2mJy', 2: '1mJy', 3: '0.5mJy',4:'1.0mJy'},
-                           # rms:                   6e-4                            3.5e-4
-                                 'niter': {0: 1000, 1: 3000, 2: 9000, 3: 18000,4:18000},
-                                 'maskname': {0: 'G328_B6_clean_robust0.crtf',
-                                              1: 'G328_B6_clean_robust0.crtf',
-                                              2: 'G328_B6_clean_robust0.crtf',
-                                              3: 'G328_B6_clean_robust0.crtf',
-                                              4:'G328_B6_clean_robust0.crtf'}},
-                                              
-     'G328.25_B6_7M12M_robust-2': {'threshold': {0: '8.0mJy', 1: '2mJy', 2: '1mJy', 3: '0.5mJy',4:'1.5mJy'},
-                           # rms:                   6e-4                            3.5e-4
-                                 'niter': {0: 1000, 1: 3000, 2: 9000, 3: 18000,4:18000},
-                                 'maskname': {0: 'G328_B6_clean_robust0.crtf',
-                                              1: 'G328_B6_clean_robust0.crtf',
-                                              2: 'G328_B6_clean_robust0.crtf',
-                                              3: 'G328_B6_clean_robust0.crtf',
-                                              4: 'G328_B6_clean_robust0.crtf'}},
-
-    'G328.25_B6_12M_robust0': {'threshold': {0: '1e-3Jy', 1: '2mJy', 2: '1mJy', 3: '0.5mJy',4:'0.5mJy',5:'0.5mJy'}, # cleaning may be too deep?
-# rms 5e-4
-                               'niter': {0: 3000, 1: 3000, 2: 9000, 3: 18000,4:18000,5:18000},
-                               'maskname': {0: 'G328_B6_clean_12M_robust0_3sigma.crtf',
-                                            1: 'G328_B6_clean_robust0.crtf',
-                                            2: 'G328_B6_clean_robust0.crtf',
-                                            3: 'G328_B6_clean_robust0.crtf',
-                                            4: 'G328_B6_clean_robust0.crtf',
-                                            5: 'G328_B6_clean_robust0.crtf',
-
-}},
-
-    'G328.25_B6_12M_robust-2': {'threshold': {0: '16e-4Jy', 1: '2mJy', 2: '1mJy', 3: '0.5mJy',4:'0.5mJy',5:'0.5mJy'},
-# rms 8e-4
-                               'niter': {0: 3000, 1: 3000, 2: 9000, 3: 18000,4:18000,5:18000},
-                               'maskname': {0: 'G328_B6_clean_12M_robust0_3sigma.crtf',
-                                            1: 'G328_B6_clean_robust0.crtf',
-                                            2: 'G328_B6_clean_robust0.crtf',
-                                            3: 'G328_B6_clean_robust0.crtf',
-                                            4: 'G328_B6_clean_robust0.crtf',
-                                            5: 'G328_B6_clean_robust0.crtf'}},
-
-    'G328.25_B6_12M_robust2': {'threshold': {0: '8e-4Jy', 1: '2mJy', 2: '1mJy', 3: '0.5mJy',4:'0.5mJy',5:'0.5mJy'},
-# rms : 4e-4
-
-                               'niter': {0: 3000, 1: 3000, 2: 9000, 3: 18000,4:18000,5:18000},
-                               'maskname': {0: 'G328_B6_clean_12M_robust0_3sigma.crtf',
-                                            1: 'G328_B6_clean_robust0.crtf',
-                                            2: 'G328_B6_clean_robust0.crtf',
-                                            3: 'G328_B6_clean_robust0.crtf',
-                                            4: 'G328_B6_clean_robust0.crtf',
-                                            5: 'G328_B6_clean_robust0.crtf'}},
-
-
+        "scales": [0, 3, 9, 27],
+    },
+    "G333.60_B3_7M12M_robust2": {
+        "threshold": "0.07mJy",
+        "niter": 90000,
+        "scales": [0, 3, 9],
+        "maskname": "mask_G333_B3_7m12m_0.0015.crtf",
+    },
+    "G333.60_B3_7M12M_robust-2": {
+        "threshold": "0.07mJy",
+        "niter": 90000,
+        "scales": [0, 3, 9, 27],
+        "maskname": "mask_G333_B3_7m12m_0.0015.crtf",
+    },
+    "G333.60_B6_12M_robust0": {
+        "threshold": {
+            0: "1.2mJy",
+            1: "1.2mJy",
+            2: "0.8mJy",
+            3: "0.4mJy",
+            4: "0.2mJy",
+            5: "0.15 mJy",
+            6: "0.15 mJy",
+            "final": "0.15 mJy",
+        },
+        "niter": {0: 3000, 1: 3000, 2: 6000, 3: 12000, 4: 24000, 5: 48000, 6: 70000, "final": 70000},
+        "maskname": {
+            0: "mask_G333_B6_12m_0.1.crtf",
+            1: "mask_G333_B6_12m_0.1.crtf",
+            2: "mask_G333_B6_12m_0.03.crtf",
+            3: "mask_G333_B6_12m_0.03.crtf",
+            4: "mask_G333_B6_12m_0.01.crtf",
+            5: "mask_G333_B6_12m_0.01.crtf",
+            6: "mask_G333_B6_12m_final.crtf",
+            "final": "mask_G333_B6_12m_final.crtf",
+        },
+        "scales": [0, 3, 9],
+    },
+    "G333.60_B6_12M_robust2": {
+        "threshold": "0.15mJy",
+        "niter": 70000,
+        "maskname": "mask_G333_B6_12m_final.crtf",
+        "scales": [0, 3, 9],
+    },
+    "G333.60_B6_12M_robust-2": {
+        "threshold": "0.1mJy",
+        "niter": 70000,
+        "maskname": "mask_G333_B6_12m_final.crtf",
+        "scales": [0, 3, 9],
+    },
+    "G333.60_B6_7M12M_robust0": {
+        "threshold": {
+            0: "1.2mJy",
+            1: "1.2mJy",
+            2: "0.8mJy",
+            3: "0.4mJy",
+            4: "0.2mJy",
+            5: "0.15 mJy",
+            "final": "0.15 mJy",
+        },
+        "niter": {0: 3000, 1: 3000, 2: 6000, 3: 12000, 4: 24000, 5: 48000, "final": 70000},
+        "maskname": {
+            0: "mask_G333_B6_7m12m_0.1.crtf",
+            1: "mask_G333_B6_7m12m_0.1.crtf",
+            2: "mask_G333_B6_7m12m_0.03.crtf",
+            3: "mask_G333_B6_7m12m_0.03.crtf",
+            4: "mask_G333_B6_7m12m_0.01.crtf",
+            5: "mask_G333_B6_7m12m_0.01.crtf",
+            "final": "mask_G333_B6_7m12m_final.crtf",
+        },
+        "scales": [0, 3, 9, 27],
+    },
+    "G333.60_B6_7M12M_robust2": {
+        "threshold": "0.15mJy",
+        "niter": 70000,
+        "maskname": "mask_G333_B6_7m12m_final.crtf",
+        "scales": [0, 3, 9],
+    },
+    "G333.60_B6_7M12M_robust-2": {
+        "threshold": "0.1mJy",
+        "niter": 70000,
+        "maskname": "mask_G333_B6_7m12m_final.crtf",
+        "scales": [0, 3, 9, 27],
+    },
+    "G012.80_B3_7M12M_robust0": {
+        "threshold": {0: "10.0mJy", 1: "10mJy", 2: "3mJy", 3: "3mJy", 4: "1mJy", 5: "0.25mJy"},
+        "niter": {0: 100, 1: 500, 2: 1000, 3: 1500, 4: 3000, 5: 5000},
+        "scales": {0: [0, 3, 9, 27, 100]},
+    },
+    "G012.80_B3_12M_robust0": {
+        "threshold": {
+            0: "10.0mJy",
+            1: "10mJy",
+            2: "5mJy",
+            3: "3mJy",
+            4: "1mJy",
+            5: "0.25mJy",
+            6: "0.25mJy",
+            7: "0.25mJy",
+        },
+        "niter": {0: 500, 1: 100, 2: 1000, 3: 3000, 4: 5000, 5: 7000, 6: 7000, 7: 7000},
+    },
+    "G012.80_B6_12M_robust0": {
+        "threshold": {0: "3.0mJy", 1: "2mJy", 2: "1.5mJy", 3: "1mJy", 4: "1mJy", 5: "0.25mJy", 6: "0.25mJy"},
+        "niter": {0: 500, 1: 1500, 2: 3000, 3: 5000, 4: 15000, 5: 30000, 6: 30000},
+    },
+    "G337.92_B3_12M_robust0": {
+        "threshold": {0: "10e-4Jy", 1: "10e-4Jy", 2: "5e-4Jy", 3: "4e-4Jy", 4: "2.5e-4Jy", "final": "0.1mJy"},
+        "scales": [0, 3, 9],
+        "niter": {0: 5000, 1: 8000, 2: 10000, 3: 15000, 4: 30000, "final": 50000},  # rms ~ 1.25e-4 Jy/b.
+        "maskname": {
+            0: "G337.92_B3_12M_robust0.crtf",
+            1: "G337.92_B3_12M_robust0.crtf",
+            2: "G337.92_B3_12M_robust0.crtf",
+            3: "G337.92_B3_12M_robust0.crtf",
+            4: "G337.92_B3_12M_robust0.crtf",
+        },
+    },
+    "G337.92_B3_12M_robust-2": {
+        "threshold": {4: "5e-4Jy"},
+        "scales": [0, 3, 9, 27],  # rms ~ 2.45e-4 Jy/b.
+        "niter": {4: 30000},
+        "maskname": {4: "G337.92_B3_12M_robust-2.crtf"},
+    },
+    "G337.92_B3_12M_robust2": {
+        "threshold": {4: "1.5e-4Jy"},  # rms ~ 7.5e-5 Jy/b
+        "scales": [0, 3, 9, 27],
+        "niter": {4: 30000},
+        "maskname": {4: "G337.92_B3_12M_full.crtf"},
+    },
+    "G337.92_B6_12M_robust0": {
+        "threshold": {0: "10e-4Jy", 1: "10e-4Jy", 2: "5e-4Jy", 3: "5e-4Jy", 4: "5e-4Jy"},
+        "scales": [0, 3, 9, 27],
+        "niter": {0: 5000, 1: 8000, 2: 10000, 3: 15000, 4: 30000},
+        "maskname": {
+            0: "G337.92_B6_12M_final.crtf",
+            1: "G337.92_B6_12M_final.crtf",
+            2: "G337.92_B6_12M_final.crtf",
+            3: "G337.92_B6_12M_final.crtf",
+            4: "G337.92_B6_12M_final.crtf",
+        },
+    },
+    "G337.92_B6_12M_robust-2": {
+        "threshold": {4: "6e-4Jy"},
+        "scales": [0, 3, 9, 27],
+        "niter": {4: 30000},
+        "maskname": {4: "G337.92_B6_12M_final.crtf"},
+    },
+    "G337.92_B6_12M_robust2": {
+        "threshold": {4: "4.8e-4Jy"},
+        "scales": [0, 3, 9, 27],
+        "niter": {4: 30000},
+        "maskname": {4: "G337.92_B6_12M_final.crtf"},
+    },
+    "W51-IRS2_B6_12M_robust0": {
+        "threshold": {
+            0: "0.3mJy",
+            1: "0.25mJy",
+            2: "0.25mJy",
+            3: "0.25mJy",
+            4: "0.25mJy",
+            5: "0.25mJy",
+            6: "0.2mJy",
+            7: "0.2mJy",
+            8: "0.2mJy",
+            9: "0.2mJy",
+        },
+        "scales": [0, 3, 9, 27],
+    },
+    "W51-IRS2_B3_12M_robust0": {
+        "threshold": {0: "0.3mJy", 1: "0.2mJy", 2: "0.2mJy", 3: "0.1mJy", 4: "0.08mJy"},
+        "scales": [0, 3, 9, 27],
+    },
+    "W51-IRS2_B3_7M12M_robust0": {
+        "threshold": {0: "0.5mJy", 1: "0.3mJy", 2: "0.2mJy", 3: "0.1mJy", 4: "0.08mJy"},
+        "scales": [0, 3, 9, 27],
+        "cell": ["0.0375arcsec", "0.0375arcsec"],
+        "imsize": [4800, 4800],
+    },
+    "G338.93_B3_12M_robust0": {
+        "threshold": {0: "0.36mJy", 1: "0.30mJy", 2: "0.15mJy", 3: "0.15mJy", "final": "0.1mJy"},
+        "niter": {0: 10000, 1: 10000, 2: 15000, 3: 20000, "final": 200000},
+    },
+    "G338.93_B3_12M_robust2": {"threshold": {"final": "0.10mJy"}, "niter": {"final": 200000}},
+    "G338.93_B3_12M_robust-2": {"threshold": {"final": "0.30mJy"}, "niter": {"final": 200000}},
+    "G338.93_B3_12M_robust0_bsens": {
+        "threshold": {0: "0.34mJy", 1: "0.25mJy", 2: "0.15mJy", 3: "0.12mJy", "final": "0.1mJy"},
+        "niter": {0: 2000, 1: 2000, 2: 5000, 3: 8000, "final": 200000},
+    },
+    "G338.93_B3_12M_robust2_bsens": {"threshold": {"final": "0.10mJy"}, "niter": {"final": 200000}},
+    "G338.93_B3_12M_robust-2_bsens": {"threshold": {"final": "0.30mJy"}, "niter": {"final": 200000}},
+    "G338.93_B3_7M12M_robust0": {
+        "threshold": {0: "0.5mJy", 1: "0.4mJy", 2: "0.2mJy", "final": "0.1mJy"},
+        "niter": {0: 2000, 1: 5000, 2: 8000, "final": 200000},
+        "scales": [0, 3, 9, 27],
+    },
+    "G338.93_B3_7M12M_robust2": {"threshold": {"final": "0.1mJy"}, "niter": {"final": 200000}},
+    "G338.93_B3_7M12M_robust-2": {"threshold": {"final": "0.1mJy"}, "niter": {"final": 200000}},
+    "W51-E_B6_12M_robust0": {
+        "threshold": {
+            0: "0.3mJy",
+            1: "0.25mJy",
+            2: "0.25mJy",
+            3: "0.25mJy",
+            4: "0.25mJy",
+            5: "0.25mJy",
+            6: "0.2mJy",
+            7: "0.2mJy",
+        },
+        "scales": [0, 3, 9, 27],
+    },
+    "W51-E_B3_12M_robust0": {
+        "threshold": {
+            0: "0.15mJy",
+            1: "0.15mJy",
+            2: "0.1mJy",
+            3: "0.09mJy",
+            4: "0.09mJy",
+            5: "0.08mJy",  # TIP: next time, go to 0.08.  0.07 takes _ages_
+            6: "0.08mJy",
+            7: "0.08mJy",
+        },
+        "niter": {
+            0: 100000,  # limit to 100k for time considerations
+            1: 100000,
+            2: 100000,
+            3: 100000,
+            4: 100000,
+            5: 100000,
+            6: 100000,
+            7: 100000,
+            "final": 100000,
+        },
+        "scales": [0, 3, 9, 27],
+        "imsize": [4800, 4800],
+        "cell": ["0.0375arcsec", "0.0375arcsec"],
+    },
+    "W51-E_B3_12M_robust2": {"threshold": "0.15mJy", "scales": [0, 3, 9, 27], "imsize": [4800, 4800]},
+    "W51-E_B3_12M_robust-2": {"threshold": "0.15mJy", "scales": [0, 3, 9], "imsize": [4800, 4800]},
+    "W51-E_B3_12M_robust-0.5": {"threshold": "0.15mJy", "imsize": [4800, 4800]},
+    "W51-E_B3_12M_robust0.5": {"threshold": "0.15mJy", "imsize": [4800, 4800]},
+    "W51-E_B3_12M_robust1": {"threshold": "0.15mJy", "imsize": [4800, 4800]},
+    "W51-E_B3_12M_robust-1": {"threshold": "0.15mJy", "imsize": [4800, 4800]},
+    "W51-E_B6_7M12M_robust0": {"threshold": "3mJy", "scales": [0, 3, 9, 27]},
+    "W51-E_B3_7M12M_robust0": {
+        "threshold": {0: "5mJy", 1: "3mJy", 2: "1mJy", 3: "1mJy"},
+        "scales": {0: [9, 27], 1: [3, 9, 27], 2: [0, 3, 9, 27], 3: [0, 3, 9, 27]},
+        "cell": ["0.0375arcsec", "0.0375arcsec"],
+        "imsize": [4800, 4800],
+    },
+    "W43-MM1_B6_12M_robust0": {
+        "threshold": {0: "10.0mJy", 1: "10.0mJy", 2: "8mJy", 3: "5mJy", 4: "3mJy", "final": "1mJy",},
+        "niter": {0: 1000, 1: 5000, 2: 5000, 3: 5000, 4: 5000, "final": 10000},
+        "scales": {
+            0: [0, 3, 9, 27],
+            1: [0, 3, 9, 27],
+            2: [0, 3, 9, 27],
+            3: [0, 3, 9, 27],
+            4: [0, 3, 9, 27],
+            "final": [0, 3, 9, 27, 54],
+        },
+        "maskname": {
+            0: "W43-MM1_B6_dirty_12M.crtf",
+            1: "W43-MM1_B6_early-iter_12M.crtf",
+            2: "W43-MM1_B6_early-iter_12M.crtf",
+            3: "W43-MM1_B6_late-iter_12M.crtf",
+            4: "W43-MM1_B6_last-iter_12M.crtf",
+            "final": "W43-MM1_B6_final_12M.crtf",
+        },
+    },
+    "W43-MM1_B6_12M_robust0_bsens": {
+        "threshold": {0: "10.0mJy", 1: "10.0mJy", 2: "8mJy", 3: "5mJy", 4: "3mJy", "final": "1mJy",},
+        "niter": {0: 1000, 1: 5000, 2: 5000, 3: 5000, 4: 5000, "final": 10000},
+        "scales": {
+            0: [0, 3, 9, 27],
+            1: [0, 3, 9, 27],
+            2: [0, 3, 9, 27],
+            3: [0, 3, 9, 27],
+            4: [0, 3, 9, 27],
+            "final": [0, 3, 9, 27, 54],
+        },
+        "maskname": {
+            0: "W43-MM1_B6_dirty_12M.crtf",
+            1: "W43-MM1_B6_early-iter_12M.crtf",
+            2: "W43-MM1_B6_early-iter_12M.crtf",
+            3: "W43-MM1_B6_late-iter_12M.crtf",
+            4: "W43-MM1_B6_last-iter_12M.crtf",
+            "final": "W43-MM1_B6_final_12M.crtf",
+        },
+    },
+    "W43-MM2_B6_12M_robust0": {
+        "threshold": {
+            0: "2.0mJy",
+            1: "2.0mJy",
+            2: "0.7mJy",
+            3: "0.5mJy",
+            4: "0.35mJy",
+            5: "0.25mJy",
+            "final": "0.35mJy",
+        },
+        "niter": {0: 1000, 1: 3000, 2: 10000, 3: 12000, 4: 15000, 5: 15000, "final": 22000},
+        "scales": [0, 3, 9, 27],
+        "maskname": {"final": ""},
+        "usemask": {"final": "pb"},
+    },
+    "W43-MM2_B6_7M12M_robust0": {
+        "threshold": {0: "2.0mJy", 1: "2.0mJy", 2: "1.0mJy", 3: "0.5mJy", 4: "0.4mJy", "final": "0.5mJy"},
+        "niter": {0: 1000, 1: 5000, 2: 10000, 3: 10000, 4: 10000, "final": 25000},
+        "scales": {
+            0: [0, 3, 9, 27],
+            1: [0, 3, 9, 27],
+            2: [0, 3, 9, 27],
+            3: [0, 3, 9, 27],
+            4: [0, 3, 9, 27],
+            "final": [0, 3, 9, 27, 81],
+        },
+        "maskname": {"final": ""},
+        "usemask": {"final": "pb"},
+    },
+    "W43-MM3_B6_12M_robust0": {
+        "threshold": {
+            0: "1.0mJy",
+            1: "1.0mJy",
+            2: "0.25mJy",
+            3: "0.25mJy",
+            4: "0.25mJy",
+            5: "0.25mJy",
+            "final": "0.23mJy",
+        },
+        "niter": {0: 1000, 1: 3000, 2: 12000, 3: 12000, 4: 12000, 5: 15000, "final": 18000},
+        "scales": [0, 3, 9, 27],
+        "maskname": {"final": ""},
+        "usemask": {"final": "pb"},
+    },
+    "W43-MM3_B6_7M12M_robust0": {
+        "threshold": {0: "1.0mJy", 1: "1.0mJy", 2: "0.7mJy", 3: "0.35mJy", 4: "0.35mJy", "final": "0.5mJy"},
+        "niter": {0: 1000, 1: 5000, 2: 10000, 3: 10000, 4: 10000, "final": 10000},
+        "scales": {
+            0: [0, 3, 9, 27],
+            1: [0, 3, 9, 27],
+            2: [0, 3, 9, 27],
+            3: [0, 3, 9, 27],
+            4: [0, 3, 9, 27],
+            "final": [0, 3, 9, 27, 54],
+        },
+        "maskname": {"final": ""},
+        "usemask": {"final": "pb"},
+    },
+    "W43-MM1_B3_12M_robust0": {
+        "threshold": {0: "0.1mJy", 1: "0.1mJy", 2: "0.1mJy", 3: "0.1mJy", 4: "0.1mJy", "final": "0.1mJy"},
+        "niter": {0: 20000, 1: 20000, 2: 20000, 3: 20000, 4: 20000, "final": 25000},
+        "scales": {
+            0: [0, 3, 9, 27],
+            1: [0, 3, 9, 27],
+            2: [0, 3, 9, 27],
+            3: [0, 3, 9, 27],
+            4: [0, 3, 9, 27],
+            "final": [0, 3, 9, 27, 81],
+        },
+        "maskname": {"final": ""},
+        "usemask": {"final": "pb"},
+    },
+    "W43-MM1_B3_7M12M_robust0": {
+        "threshold": {0: "1.0mJy", 1: "1.0mJy", 2: "0.23mJy", 3: "0.15mJy", 4: "0.1mJy", "final": "0.05mJy"},
+        "niter": {0: 1000, 1: 9000, 2: 13000, 3: 15000, 4: 17000, "final": 26000},
+        "scales": {
+            0: [0, 3, 9, 27],
+            1: [0, 3, 9, 27],
+            2: [0, 3, 9, 27],
+            3: [0, 3, 9, 27],
+            4: [0, 3, 9, 27],
+            "final": [0, 9, 27, 81, 162],
+        },
+        "maskname": {"final": ""},
+        "usemask": {"final": "pb"},
+    },
+    "W43-MM2_B3_12M_robust0": {
+        "threshold": {0: "0.2mJy", 1: "0.1mJy", 2: "0.1mJy", 3: "0.1mJy", 4: "0.1mJy", "final": "0.12mJy"},
+        "niter": {0: 30000, 1: 30000, 2: 30000, 3: 30000, 4: 30000, "final": 30000},
+        "scales": {
+            0: [0, 3, 9, 27],
+            1: [0, 3, 9, 27],
+            2: [0, 3, 9, 27],
+            3: [0, 3, 9, 27],
+            4: [0, 3, 9, 27],
+            "final": [0, 9, 27, 81, 162],
+        },
+        "maskname": {"final": ""},
+        "usemask": {"final": "pb"},
+    },
+    "W43-MM2_B3_7M12M_robust0": {
+        "threshold": {0: "0.5mJy", 1: "1.0mJy", 2: "0.5mJy", 3: "0.2mJy", 4: "0.08mJy", "final": "0.06mJy"},
+        "niter": {0: 9000, 1: 10000, 2: 12000, 3: 15000, 4: 20000, 5: 25000},
+        "scales": {
+            0: [0, 3, 9, 27],
+            1: [0, 3, 9, 27],
+            2: [0, 3, 9, 27],
+            3: [0, 3, 9, 27],
+            4: [0, 3, 9, 27],
+            "final": [0, 9, 27, 81, 162],
+        },
+        "maskname": {"final": ""},
+        "usemask": {"final": "pb"},
+    },
+    "W43-MM3_B3_12M_robust0": {
+        "threshold": {0: "0.1mJy", 1: "0.1mJy", 2: "0.1mJy", 3: "0.1mJy", 4: "0.1mJy", 5: "0.1mJy", "final": "0.11mJy"},
+        "niter": {0: 20000, 1: 20000, 2: 20000, 3: 20000, 4: 20000, 5: 20000, "final": 24000},
+        "scales": {
+            0: [0, 3, 9, 27],
+            1: [0, 3, 9, 27],
+            2: [0, 3, 9, 27],
+            3: [0, 3, 9, 27],
+            4: [0, 3, 9, 27],
+            5: [0, 3, 9, 27],
+            "final": [0, 3, 9, 27, 81],
+        },
+        "maskname": {"final": ""},
+        "usemask": {"final": "pb"},
+    },
+    "W43-MM3_B3_7M12M_robust0": {
+        "threshold": {0: "1.0mJy", 1: "1.0mJy", 2: "0.5mJy", 3: "0.2mJy", 4: "0.1mJy", "final": "0.04mJy"},
+        "niter": {0: 3000, 1: 8000, 2: 15000, 3: 17000, 4: 20000, "final": 25000},
+        "scales": {
+            0: [0, 3, 9, 27],
+            1: [0, 3, 9, 27],
+            2: [0, 3, 9, 27],
+            3: [0, 3, 9, 27],
+            4: [0, 3, 9, 27],
+            "final": [0, 9, 27, 81, 162],
+        },
+        "maskname": {"final": ""},
+        "usemask": {"final": "pb"},
+    },
+    "G353.41_B3_12M_robust-2": {"threshold": "0.5mJy", "scales": [0, 3, 9, 27]},
+    "G353.41_B3_12M_robust0": {"threshold": "0.36mJy", "scales": [0, 3, 9, 27]},
+    "G353.41_B3_12M_robust2": {"threshold": "0.28mJy", "scales": [0, 3, 9, 27]},
+    "G353.41_B3_7M12M_robust-2": {"threshold": "0.52mJy", "scales": [0, 3, 9, 27]},
+    "G353.41_B3_7M12M_robust0": {"threshold": "0.4mJy", "scales": [0, 3, 9, 27]},
+    "G353.41_B3_7M12M_robust2": {"threshold": "0.42mJy", "scales": [0, 3, 9, 27]},
+    "G353.41_B6_12M_robust-2": {"threshold": "1.4mJy", "scales": [0, 3, 9]},
+    "G353.41_B6_12M_robust0": {"threshold": "1.04mJy", "scales": [0, 3, 9]},
+    "G353.41_B6_12M_robust2": {"threshold": "0.74mJy", "scales": [0, 3, 9]},
+    "G353.41_B6_7M12M_robust-2": {"threshold": "1.4mJy", "scales": [0, 3, 9]},
+    "G353.41_B6_7M12M_robust0": {"threshold": "1.06mJy", "scales": [0, 3, 9]},
+    "G353.41_B6_7M12M_robust2": {"threshold": "0.82mJy", "scales": [0, 3, 9]},
+    "G327.29_B3_12M_robust0": {
+        "threshold": {0: "1.5mJy", 1: "0.6mJy", 2: "0.5mJy", "final": "0.1mJy"},
+        "niter": {0: 1000, 1: 2000, 2: 5000, "final": 200000},
+        "scales": [0, 3, 9, 27],
+    },
+    "G327.29_B3_12M_robust-2": {"threshold": {"final": "0.4mJy"}, "niter": {"final": 200000}, "scales": [0, 3, 9, 27]},
+    "G327.29_B3_12M_robust2": {"threshold": {"final": "0.4mJy"}, "niter": {"final": 200000}, "scales": [0, 3, 9, 27]},
+    "G327.29_B3_7M12M_robust0": {
+        "threshold": {0: "2.0mJy", 1: "1.8mJy", "final": "1.5mJy"},
+        "niter": {0: 5000, 1: 5000, "final": 200000},
+        "scales": [0, 3, 9, 27],
+    },
+    "G327.29_B3_7M12M_robust-2": {
+        "threshold": {"final": "0.5mJy"},
+        "niter": {"final": 200000},
+        "scales": [0, 3, 9, 27],
+    },
+    "G327.29_B3_7M12M_robust2": {"threshold": {"final": "0.5mJy"}, "niter": {"final": 100000}, "scales": [0, 3, 9, 27]},
+    "G327.29_B6_12M_robust0": {
+        "threshold": {0: "2.0mJy", 1: "1.5mJy", 2: "1.0mJy", 3: "1.0mJy", 4: "0.8mJy", 5: "0.5mJy", "final": "0.5mJy"},
+        "niter": {0: 1000, 1: 1000, 2: 5000, 3: 8000, 4: 10000, 5: 10000, "final": 20000},
+        "scales": [0, 3, 9, 27],
+    },
+    "G327.29_B6_12M_robust2": {"threshold": {"final": "1.0mJy"}, "niter": {"final": 20000}},
+    "G327.29_B6_12M_robust-2": {"threshold": {"final": "1.0mJy"}, "niter": {"final": 20000}},
+    "G327.29_B6_7M12M_robust0": {
+        "threshold": {0: "2.0mJy", 1: "1.5mJy", 2: "1.0mJy", 3: "0.8mJy", 4: "0.8mJy", 5: "0.5mJy"},
+        "niter": {0: 1000, 1: 1000, 2: 5000, 3: 8000, 4: 10000, 5: 200000},
+        "scales": [0, 3, 9, 27],
+    },
+    "G327.29_B6_7M12M_robust2": {"threshold": {5: "1.0mJy"}, "niter": {5: 20000}},
+    "G327.29_B6_7M12M_robust-2": {"threshold": {5: "1.0mJy"}, "niter": {5: 20000}},
+    "G010.62_B3_12M_robust0": {
+        "threshold": {
+            0: "10mJy",
+            1: "5mJy",
+            2: "2.5 mJy",
+            3: "1.0mJy",
+            4: "0.5mJy",
+            5: "0.3mJy",
+            6: "0.3mJy",
+            7: "0.25mJy",
+            8: "0.25mJy",
+            9: "0.25mJy",
+        },
+        "niter": {0: 700, 1: 1300, 2: 2500, 3: 5000, 4: 10000, 5: 10000, 6: 15000, 7: 15000, 8: 15000, 9: 15000},
+        "maskname": {
+            0: "G010.62_centralBox_50_30.crtf",
+            1: "G010.62_B3_50mJy.crtf",
+            2: "G010.62_B3_15mJy.crtf",
+            3: "G010.62_B3_05mJy.crtf",
+            4: "G010.62_B3_03mJy.crtf",
+            5: "G010.62_B3_01mJy.crtf",
+            6: "G010.62_B3_iter6.crtf",
+            7: "G010.62_B3_iter7.crtf",
+            8: "G010.62_B3_iter7.crtf",
+            9: "G010.62_B3_iter7.crtf",
+        },
+    },
+    "G010.62_B6_12M_robust0": {
+        "threshold": {0: "10mJy", 1: "5mJy", 2: "2.5 mJy", 3: "1.0mJy", 4: "0.5mJy", 5: "0.3mJy"},
+        "niter": {0: 700, 1: 2500, 2: 5000, 3: 7500, 4: 10000, 5: 20000},
+        "maskname": {
+            0: "G010.62_centralBox_50_30.crtf",
+            1: "G010.62_B6_early_iterations.crtf",
+            2: "G010.62_B6_early_iterations.crtf",
+            3: "G010.62_B6_early_iterations.crtf",
+            4: "G010.62_B6_late_iterations.crtf",
+            5: "G010.62_B6_late_iterations.crtf",
+        },
+    },
+    "G351.77_B6_7M_robust0": {
+        "threshold": {0: "12.0mJy", 1: "12mJy", 2: "3mJy", 3: "0.25mJy", 4: "0.25mJy"},
+        "niter": {0: 1000, 1: 3000, 2: 9000, 3: 18000, 4: 25000},
+        "scales": [0, 3],
+        "maskname": {
+            0: "G351.77_B6_7M12M_iter1.crtf",
+            1: "G351.77_B6_7M_iter1.crtf",
+            2: "G351.77_B6_7M_iter1.crtf",
+            3: "G351.77_B6_7M_iter1.crtf",
+            4: "G351.77_B6_7M_iter1.crtf",
+        },
+    },
+    "G351.77_B6_7M12M_robust0": {
+        "threshold": {0: "10.0mJy", 1: "10.0mJy", 2: "5.0mJy", 3: "1.0mJy", 4: "1.0mJy", "final": "1.0mJy"},
+        "niter": {0: 1000, 1: 3000, 2: 9000, 3: 18000, 4: 25000},
+        "scales": [0, 3],
+        "maskname": {
+            0: "G351.77_B6_7M12M_iter1.crtf",
+            1: "G351.77_B6_7M_iter1.crtf",
+            2: "G351.77_B6_7M_iter1.crtf",
+            3: "G351.77_B6_7M_iter1.crtf",
+            4: "G351.77_B6_7M_iter1.crtf",
+            "final": "G351.77_B6_7M12M_finaliter.crtf",
+        },
+    },
+    "G351.77_B6_7M12M_robust2": {
+        "threshold": {"final": "1.0mJy"},
+        "niter": {"final": 25000},
+        "scales": [0, 3],
+        "maskname": {"final": "G351.77_B6_7M12M_finaliter.crtf"},
+    },
+    "G351.77_B6_7M12M_robust-2": {
+        "threshold": {"final": "1.0mJy"},
+        "niter": {"final": 18000},
+        "scales": [0, 3],
+        "maskname": {"final": "G351.77_B6_7M12M_finaliter.crtf"},
+    },
+    "G351.77_B6_12M_robust0": {
+        "threshold": {0: "12e-4Jy", 1: "12e-4Jy", 2: "12e-4Jy", 3: "12e-4Jy", 4: "12e-4Jy"},
+        "niter": {0: 1000, 1: 3000, 2: 9000, 3: 18000, 4: 18000},
+        "maskname": {
+            0: "G351.77_B6_12M.crtf",
+            1: "G351.77_B6_12M.crtf",
+            2: "G351.77_B6_12M.crtf",
+            3: "G351.77_B6_12M.crtf",
+            4: "G351.77_B6_12M.crtf",
+            "final": "G351.77_B6_12M_final.crtf",
+        },
+    },
+    "G351.77_B6_12M_robust2": {
+        "threshold": {4: "10e-4Jy"},
+        "niter": {4: 18000},
+        "maskname": {4: "G351.77_B6_12M_final.crtf"},
+    },
+    "G351.77_B6_12M_robust-2": {
+        "threshold": {0: "14.4e-4Jy", 1: "14.4e-4Jy", 2: "14.4e-4Jy", 3: "14.4e-4Jy", 4: "14.4e-4Jy"},
+        "niter": {4: 18000},
+        "maskname": {4: "G351.77_B6_12M_final.crtf"},
+    },
+    "G351.77_B3_12M_robust-2": {
+        "threshold": {4: "8e-4Jy"},
+        "niter": {4: 18000},
+        "maskname": {4: "G351.77_B3_12M_robust2_bsens.crtf"},
+    },
+    "G351.77_B3_12M_robust2": {
+        "threshold": {4: "3e-4Jy"},
+        "niter": {4: 18000},
+        "maskname": {4: "G351.77_B3_12M_robust2_bsens.crtf"},
+    },
+    "G351.77_B3_12M_robust0": {
+        "threshold": {0: "3e-4Jy", 1: "3e-4Jy", 2: "3e-4Jy", 3: "3e-4Jy", 4: "3e-4Jy"},
+        "niter": {0: 1000, 1: 3000, 2: 9000, 3: 18000, 4: 18000},
+        "maskname": {
+            0: "G351.77_B3_12M_robust2_bsens.crtf",
+            1: "G351.77_B3_12M_robust2_bsens.crtf",
+            2: "G351.77_B3_12M_robust2_bsens.crtf",
+            3: "G351.77_B3_12M_robust2_bsens.crtf",
+            4: "G351.77_B3_12M_robust2_bsens.crtf",
+        },
+    },
+    "G351.77_B3_7M12M_robust-2": {
+        "threshold": {4: "3.2e-4Jy"},
+        "niter": {4: 18000},
+        "scales": [0, 3],
+        "maskname": {4: "G351.77_B3_7M12M_robust2_bsens.crtf"},
+    },
+    "G351.77_B3_7M12M_robust2": {
+        "threshold": {4: "1.8e-4Jy"},
+        "niter": {4: 18000},
+        "scales": [0, 3],
+        "maskname": {4: "G351.77_B3_7M12M_robust2_bsens.crtf"},
+    },
+    "G351.77_B3_7M12M_robust0": {
+        "threshold": {0: "2e-4Jy", 1: "2e-4Jy", 2: "2e-4Jy", 3: "2e-4Jy", 4: "2e-4Jy"},
+        "niter": {0: 1000, 1: 3000, 2: 9000, 3: 9000, 4: 9000},
+        "scales": [0, 3],
+        "maskname": {
+            0: "G351.77_B3_7M12M_robust2_bsens.crtf",
+            1: "G351.77_B3_7M12M_robust2_bsens.crtf",
+            2: "G351.77_B3_7M12M_robust2_bsens.crtf",
+            3: "G351.77_B3_7M12M_robust2_bsens.crtf",
+            4: "G351.77_B3_7M12M_robust2_bsens.crtf",
+        },
+    },
+    "G338.93_B6_12M_robust0": {
+        "threshold": {
+            0: "1.2mJy",
+            1: "1.2mJy",
+            2: "0.9mJy",
+            3: "0.8mJy",
+            4: "0.7mJy",
+            5: "0.5mJy",
+            6: "0.35mJy",
+            "final": "0.35mJy",
+        },
+        "niter": {0: 1000, 1: 1000, 2: 2000, 3: 3000, 4: 4000, 5: 5000, 6: 6000, "final": 50000},
+        "scales": [0, 3, 9, 27],
+    },
+    "G338.93_B6_12M_robust2": {"threshold": {"final": "0.25mJy"}, "niter": {"final": 20000}, "scales": [0, 3, 9, 27]},
+    "G338.93_B6_12M_robust-2": {"threshold": {"final": "0.50mJy"}, "niter": {"final": 20000}, "scales": [0, 3, 9]},
+    "G338.93_B6_12M_robust0_bsens": {
+        "threshold": {
+            0: "1.2mJy",
+            1: "1.2mJy",
+            2: "0.9mJy",
+            3: "0.8mJy",
+            4: "0.7mJy",
+            5: "0.5mJy",
+            6: "0.30mJy",
+            "final": "0.35mJy",
+        },
+        "niter": {0: 1000, 1: 1000, 2: 2000, 3: 3000, 4: 4000, 5: 5000, 6: 6000, "final": 50000},
+        "scales": [0, 3, 9, 27],
+    },
+    "G338.93_B6_12M_robust2_bsens": {
+        "threshold": {"final": "0.20mJy"},
+        "niter": {"final": 20000},
+        "scales": [0, 3, 9, 27],
+    },
+    "G338.93_B6_12M_robust-2_bsens": {
+        "threshold": {"final": "0.45mJy"},
+        "niter": {"final": 20000},
+        "scales": [0, 3, 9],
+    },
+    "G328.25_B6_7M12M_robust0": {
+        "threshold": {0: "6mJy", 1: "4mJy", 2: "4mJy", 3: "4mJy", 4: "1.5mJy"},
+        "niter": {0: 1000, 1: 3000, 2: 9000, 3: 18000, 4: 18000},
+        "scales": [0, 3],
+        "maskname": {
+            0: "G328_B6_7M12M_iter2_n2.crtf",
+            1: "G328_B6_7M12M_iter2_n2.crtf",
+            2: "G328_B6_7M12M_iter2_n2.crtf",
+            3: "G328_B6_7M12M_iter4_n.crtf",
+            4: "G328_B6_clean_robust0.crtf",
+        },
+    },
+    "G328.25_B6_7M12M_robust2": {
+        "threshold": {4: "1.5mJy"},
+        "niter": {4: 18000},
+        "scales": [0, 3],
+        "maskname": {4: "G328_B6_clean_robust0.crtf"},
+    },
+    "G328.25_B6_7M12M_robust-2": {
+        "threshold": {4: "2mJy"},
+        "niter": {4: 18000},
+        "scales": [0, 3],
+        "maskname": {4: "G328_B6_clean_robust0.crtf"},
+    },
+    "G328.25_B6_12M_robust0": {
+        "threshold": {0: "1e-3Jy", 1: "2mJy", 2: "1mJy", 3: "0.5mJy", 4: "0.5mJy"},
+        "niter": {0: 3000, 1: 3000, 2: 9000, 3: 18000, 4: 18000},
+        "maskname": {
+            0: "G328_B6_clean_12M_robust0_3sigma.crtf",
+            1: "G328_B6_clean_robust0.crtf",
+            2: "G328_B6_clean_robust0.crtf",
+            3: "G328_B6_clean_robust0.crtf",
+            4: "G328_B6_clean_robust0.crtf",
+        },
+    },
+    "G328.25_B6_12M_robust-2": {
+        "threshold": {0: "16e-4Jy", 1: "2mJy", 2: "1mJy", 3: "0.5mJy", 4: "0.5mJy", 5: "0.5mJy"},
+        "niter": {0: 3000, 1: 3000, 2: 9000, 3: 18000, 4: 18000, 5: 18000},
+        "maskname": {
+            0: "G328_B6_clean_12M_robust0_3sigma.crtf",
+            1: "G328_B6_clean_robust0.crtf",
+            2: "G328_B6_clean_robust0.crtf",
+            3: "G328_B6_clean_robust0.crtf",
+            4: "G328_B6_clean_robust0.crtf",
+            5: "G328_B6_clean_robust0.crtf",
+        },
+    },
+    "G328.25_B6_12M_robust2": {
+        "threshold": {0: "8e-4Jy", 1: "2mJy", 2: "1mJy", 3: "0.5mJy", 4: "0.5mJy", 5: "0.5mJy"},
+        "niter": {0: 3000, 1: 3000, 2: 9000, 3: 18000, 4: 18000, 5: 18000},
+        "maskname": {
+            0: "G328_B6_clean_12M_robust0_3sigma.crtf",
+            1: "G328_B6_clean_robust0.crtf",
+            2: "G328_B6_clean_robust0.crtf",
+            3: "G328_B6_clean_robust0.crtf",
+            4: "G328_B6_clean_robust0.crtf",
+            5: "G328_B6_clean_robust0.crtf",
+        },
+    },
+    "G328.25_B3_7M12M_robust0": {
+        "threshold": {0: "0.6mJy", 1: "0.3mJy", 2: "0.3mJy", 3: "0.3mJy", 4: "0.2mJy"},  # rms = 3e-4 Jy/beam
+        "niter": {0: 1000, 1: 3000, 2: 9000, 3: 18000, 4: 18000},
+        "maskname": {
+            0: "G328.25_B3_12M_clean_robust2_1stiter_3sigma.crtf",
+            1: "G328.25_B3_7M12M_clean_robust0_1stiter_3sigma.crtf",
+            2: "G328_B3_mask.crtf",
+            3: "G328_B3_mask.crtf",
+            4: "G328_B3_mask.crtf",
+        },
+    },
+    "G328.25_B3_7M12M_robust-2": {"threshold": {4: "1mJy"}, "niter": {4: 25000}, "maskname": {4: "G328_B3_mask.crtf"}},
+    "G328.25_B3_7M12M_robust2": {"threshold": {4: "1mJy"}, "niter": {4: 25000}, "maskname": {4: "G328_B3_mask.crtf"}},
+    "G328.25_B3_12M_robust0": {
+        "threshold": {0: "0.30mJy", 1: "0.3mJy", 2: "0.3mJy", 3: "0.3mJy", 4: "0.2mJy"},  # rms = 1e-4 Jy/beam
+        "niter": {0: 5000, 1: 9000, 2: 10000, 3: 15000, 4: 20000},
+        "maskname": {
+            0: "G328.25_B3_12M_clean_robust0_1stiter_3sigma.crtf",
+            1: "G328.25_B3_12M_clean_robust0_1stiter_3sigma.crtf",
+            2: "G328.25_B3_12M_clean_robust0_1stiter_3sigma.crtf",
+            3: "G328.25_B3_12M.crtf",
+            4: "G328.25_B3_12M.crtf",
+        },
+    },
+    "G328.25_B3_12M_robust-2": {
+        "threshold": {4: "3.2e-4Jy"},  # 2*RMS, RMS =1.6e-4 Jy/beam
+        "niter": {4: 15000},
+        "maskname": {4: "G328.25_B3_12M.crtf"},
+    },  # RMS ~ 1e-4 Jy/beam for BSENS
+    "G328.25_B3_12M_robust2": {
+        "threshold": {4: "1.9e-4Jy"},  # RMS = 0.95e-4 Jy/beam
+        "niter": {4: 15000},
+        "maskname": {4: "G328.25_B3_12M.crtf"},
+    },  # RMS ~ 1e-4 Jy/beam for BSENS
+    "G328.25_B6_7M_robust0": {
+        "threshold": {0: "10mJy", 1: "5mJy", 2: "5mJy", 3: "5mJy", 4: "5mJy"},
+        "niter": {0: 1000, 1: 3000, 2: 9000, 3: 18000, 4: 18000},
+        "scales": [0, 3],
+        "maskname": {
+            0: "G328_B6_clean_robust0.crtf",
+            1: "G328_B6_clean_robust0.crtf",
+            2: "G328_B6_clean_robust0.crtf",
+            3: "G328_B6_clean_robust0.crtf",
+            4: "G328_B6_clean_robust0.crtf",
+        },
+    },
 }
 
 
-
-
 for key in imaging_parameters_nondefault:
-    if 'bsens' in key:
-        check_key = '_'.join(key.split('_')[:-1])
-        assert check_key in imaging_parameters
+    if "bsens" in key:
+        check_key = "_".join(key.split("_")[:-1])
+        assert check_key in imaging_parameters, "key {0} not in impars!".format(check_key)
         imaging_parameters[key] = copy.deepcopy(imaging_parameters[check_key])
     else:
-        assert key in imaging_parameters
+        assert key in imaging_parameters, "key {0} was not in impars".format(key)
     imaging_parameters[key].update(imaging_parameters_nondefault[key])
+
 
 
 """
@@ -1527,54 +1693,2513 @@ line_parameters['G010.62']['h41a']['cubewidth'] = '120km/s'
 line_parameters['G338.93']['sio']['cubewidth'] = '120km/s'
 line_parameters['Sgr_B2_DS']['sio']['cubewidth'] = '150km/s'
 
-# line_parameters for H41a
-line_parameters['G008.67']['h41a']['vlsr'] = '44km/s'
-line_parameters['G008.67']['h41a']['cubewidth'] = '100km/s'
-line_parameters['G010.62']['h41a']['vlsr'] = '0km/s'
-line_parameters['G010.62']['h41a']['cubewidth'] = '100km/s'
-line_parameters['G012.80']['h41a']['vlsr'] = '32km/s'
-line_parameters['G012.80']['h41a']['cubewidth'] = '100km/s'
-line_parameters['G327.29']['h41a']['vlsr'] = '-42km/s'
-line_parameters['G327.29']['h41a']['cubewidth'] = '60km/s'
-line_parameters['G328.25']['h41a']['vlsr'] = '-37km/s'
-line_parameters['G328.25']['h41a']['cubewidth'] = '60km/s'
+# copy robust -2 parameters to robust -1
+# copy robust 2 parameters to robust 1
+# copy robust 0 parameters to robust 0.5, -0.5
+for key in list(imaging_parameters.keys()):
+    robustnum = [x for x in key.split("_") if "robust" in x][0]
+    if "robust-2" == robustnum:
+        imaging_parameters[key.replace("robust-2", "robust-1")] = imaging_parameters[key].copy()
+        imaging_parameters[key.replace("robust-2", "robust-1")]["robust"] = -1
+    elif "robust2" == robustnum:
+        imaging_parameters[key.replace("robust2", "robust1")] = imaging_parameters[key].copy()
+        imaging_parameters[key.replace("robust2", "robust1")]["robust"] = 1
+    elif "robust0" == robustnum:
+        if "robust0.5" in key:
+            raise ValueError("This isn't supposed to happen")
+        imaging_parameters[key.replace("robust0", "robust0.5")] = imaging_parameters[key].copy()
+        imaging_parameters[key.replace("robust0", "robust-0.5")] = imaging_parameters[key].copy()
+        imaging_parameters[key.replace("robust0", "robust0.5")]["robust"] = 0.5
+        imaging_parameters[key.replace("robust0", "robust-0.5")]["robust"] = -0.5
+    elif robustnum in ("robust0.5", "robust-0.5", "robust1", "robust-1"):
+        pass
+    else:
+        raise ValueError("Surprising robust value found")
 
-line_parameters['G333.60']['h41a']['vlsr'] = '-44km/s'
-line_parameters['G333.60']['h41a']['cubewidth'] = '100km/s'
-line_parameters['G333.60']['h41a']['width'] = '2km/s'
-
-line_imaging_parameters['G333.60_B3_12M_robust0']['niter'] = 500000
-line_imaging_parameters['G333.60_B3_12M_robust0']['scales'] = [0,3,9,27]
-line_imaging_parameters['G333.60_B3_12M_robust0_contsub']['niter'] = 500000
-line_imaging_parameters['G333.60_B3_12M_robust0_contsub']['scales'] = [0,3,9,27]
-
-
-line_parameters['G337.92']['h41a']['vlsr'] = '-36km/s'
-line_parameters['G337.92']['h41a']['cubewidth'] = '80km/s'
-line_parameters['G338.93']['h41a']['vlsr'] = '-63km/s'
-line_parameters['G338.93']['h41a']['cubewidth'] = '60km/s'
-line_parameters['G353.41']['h41a']['vlsr'] = '-17km/s'
-line_parameters['G353.41']['h41a']['cubewidth'] = '80km/s'
-line_parameters['W43-MM1']['h41a']['vlsr'] = '100km/s'
-line_parameters['W43-MM1']['h41a']['cubewidth'] = '80km/s'
-line_parameters['W43-MM2']['h41a']['vlsr'] = '103km/s'
-line_parameters['W43-MM2']['h41a']['cubewidth'] = '60km/s'
-line_parameters['W43-MM3']['h41a']['vlsr'] = '90km/s'
-line_parameters['W43-MM3']['h41a']['cubewidth'] = '100km/s'
-line_parameters['W51-E']['h41a']['vlsr'] = '59km/s'
-line_parameters['W51-E']['h41a']['cubewidth'] = '100km/s'
-line_parameters['W51-IRS2']['h41a']['vlsr'] = '56km/s'
-line_parameters['W51-IRS2']['h41a']['cubewidth'] = '100km/s'
+for key in list(imaging_parameters.keys()):
+    robust = [x for x in key.split("_") if "robust" in x][0]
+    robustnum = float(robust[6:])
+    assert robustnum == imaging_parameters[key]["robust"]
 
 
 
+"""
+Self-calibration parameters are defined here
+"""
+
+default_selfcal_pars = {
+    ii: {
+        "solint": "inf",
+        "gaintype": "T",
+        "solnorm": True,
+        # 'combine': 'spw', # consider combining across spw bounds
+        "calmode": "p",
+    }
+    for ii in range(1, 5)
+}
+
+selfcal_pars_default = {key: copy.deepcopy(default_selfcal_pars) for key in imaging_parameters}
+
+selfcal_pars_custom = {
+    "G008.67_B3_12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G008.67_B3_12M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": False},
+        2: {"calmode": "p", "gaintype": "T", "solint": "1200s", "solnorm": False},
+        3: {"calmode": "p", "gaintype": "T", "solint": "600s", "solnorm": False},
+        4: {"calmode": "p", "gaintype": "T", "solint": "300s", "solnorm": False},
+        5: {"calmode": "p", "gaintype": "T", "solint": "200s", "solnorm": False},
+    },
+    "G008.67_B3_12M_robust0_bsens": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": False},
+        2: {"calmode": "p", "gaintype": "T", "solint": "1200s", "solnorm": False},
+        3: {"calmode": "p", "gaintype": "T", "solint": "600s", "solnorm": False},
+        4: {"calmode": "p", "gaintype": "T", "solint": "300s", "solnorm": False},
+        5: {"calmode": "p", "gaintype": "T", "solint": "200s", "solnorm": False},
+    },
+    "G008.67_B3_12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G008.67_B3_7M12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G008.67_B3_7M12M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G008.67_B3_7M12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G008.67_B3_7M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G008.67_B3_7M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G008.67_B3_7M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G008.67_B6_12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G008.67_B6_12M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": False},
+        2: {"calmode": "p", "gaintype": "T", "solint": "1200s", "solnorm": False},
+        3: {"calmode": "p", "gaintype": "T", "solint": "600s", "solnorm": False},
+        4: {"calmode": "p", "gaintype": "T", "solint": "300s", "solnorm": False},
+        5: {"calmode": "p", "gaintype": "T", "solint": "200s", "solnorm": False},
+    },
+    "G008.67_B6_12M_robust0_bsens": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": False},
+        2: {"calmode": "p", "gaintype": "T", "solint": "1200s", "solnorm": False},
+        3: {"calmode": "p", "gaintype": "T", "solint": "600s", "solnorm": False},
+        4: {"calmode": "p", "gaintype": "T", "solint": "300s", "solnorm": False},
+        5: {"calmode": "p", "gaintype": "T", "solint": "200s", "solnorm": False},
+    },
+    "G008.67_B6_12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G008.67_B6_7M12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G008.67_B6_7M12M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G008.67_B6_7M12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G008.67_B6_7M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G008.67_B6_7M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G008.67_B6_7M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G010.62_B3_12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G010.62_B3_12M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "40s", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "25s", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "10s", "solnorm": True},
+        5: {"calmode": "p", "gaintype": "T", "solint": "10s", "solnorm": True},
+        6: {"calmode": "p", "gaintype": "T", "solint": "10s", "solnorm": True},
+        7: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        8: {"calmode": "ap", "gaintype": "T", "solint": "inf", "solnorm": False},
+        9: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G010.62_B3_12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G010.62_B3_7M12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G010.62_B3_7M12M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "45s", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "30s", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "15s", "solnorm": True},
+    },
+    "G010.62_B3_7M12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G010.62_B3_7M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G010.62_B3_7M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G010.62_B3_7M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G010.62_B6_12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G010.62_B6_12M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "40s", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "25s", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "10s", "solnorm": True},
+        5: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G010.62_B6_12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G010.62_B6_7M12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G010.62_B6_7M12M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "45s", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "30s", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "15s", "solnorm": True},
+    },
+    "G010.62_B6_7M12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G010.62_B6_7M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G010.62_B6_7M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G010.62_B6_7M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G012.80_B3_12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G012.80_B3_12M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "minsnr": 5, "solint": "inf", "solnorm": False},
+        2: {"calmode": "p", "gaintype": "T", "minsnr": 5, "solint": "1200s", "solnorm": False},
+        3: {"calmode": "p", "gaintype": "T", "minsnr": 5, "solint": "300s", "solnorm": False},
+        4: {"calmode": "p", "gaintype": "T", "minsnr": 5, "solint": "300s", "solnorm": False},
+        5: {"calmode": "p", "gaintype": "T", "minsnr": 5, "solint": "inf", "solnorm": False},
+        6: {"calmode": "p", "gaintype": "T", "minsnr": 5, "solint": "inf", "solnorm": False},
+        7: {"calmode": "a", "gaintype": "T", "minsnr": 5, "solint": "inf", "solnorm": False},
+    },
+    "G012.80_B3_12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G012.80_B3_7M12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G012.80_B3_7M12M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G012.80_B3_7M12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G012.80_B3_7M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G012.80_B3_7M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G012.80_B3_7M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G012.80_B6_12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G012.80_B6_12M_robust0": {
+        1: {"calmode": "p", "gaintype": "G", "minsnr": 5, "solint": "inf", "solnorm": False},
+        2: {"calmode": "p", "gaintype": "G", "minsnr": 5, "solint": "inf", "solnorm": False},
+        3: {"calmode": "p", "gaintype": "G", "minsnr": 5, "solint": "1200s", "solnorm": False},
+        4: {"calmode": "p", "gaintype": "G", "minsnr": 4, "solint": "600s", "solnorm": False},
+        5: {"calmode": "p", "gaintype": "G", "minsnr": 5, "solint": "inf", "solnorm": False},
+        6: {"calmode": "ap", "gaintype": "G", "minsnr": 5, "solint": "inf", "solnorm": False},
+    },
+    "G012.80_B6_12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G012.80_B6_7M12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G012.80_B6_7M12M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G012.80_B6_7M12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G012.80_B6_7M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G012.80_B6_7M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G012.80_B6_7M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G327.29_B3_12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G327.29_B3_12M_robust0": {
+        1: {"calmode": "p", "gaintype": "G", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "60s", "solnorm": True},
+    },
+    "G327.29_B3_12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G327.29_B3_7M12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G327.29_B3_7M12M_robust0": {1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True}},
+    "G327.29_B3_7M12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G327.29_B3_7M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G327.29_B3_7M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G327.29_B3_7M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G327.29_B6_12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G327.29_B6_12M_robust0": {
+        1: {"calmode": "p", "gaintype": "G", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "G", "solint": "60s", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "G", "solint": "20s", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "G", "solint": "10s", "solnorm": True},
+        5: {"calmode": "p", "gaintype": "G", "solint": "5s", "solnorm": True},
+    },
+    "G327.29_B6_12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G327.29_B6_7M12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G327.29_B6_7M12M_robust0": {
+        1: {"calmode": "p", "gaintype": "G", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "G", "solint": "60s", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "G", "solint": "20s", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "G", "solint": "10s", "solnorm": True},
+        5: {"calmode": "p", "gaintype": "G", "solint": "5s", "solnorm": True},
+    },
+    "G327.29_B6_7M12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G327.29_B6_7M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G327.29_B6_7M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G327.29_B6_7M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G328.25_B3_12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G328.25_B3_12M_robust0": {
+        1: {
+            "calmode": "p",
+            "combine": "scan,scan",
+            "gaintype": "T",
+            "minblperant": 3,
+            "minsnr": 2,
+            "refant": "DV01",
+            "solint": "inf",
+            "solnorm": False,
+        },
+        2: {
+            "calmode": "p",
+            "combine": "scan,scan",
+            "gaintype": "T",
+            "minblperant": 3,
+            "minsnr": 2,
+            "refant": "DV01",
+            "solint": "inf",
+            "solnorm": False,
+        },
+        3: {
+            "calmode": "p",
+            "combine": "scan,scan",
+            "gaintype": "T",
+            "minblperant": 3,
+            "minsnr": 2,
+            "refant": "DV01",
+            "solint": "inf",
+            "solnorm": False,
+        },
+        4: {
+            "calmode": "p",
+            "combine": "scan,scan",
+            "gaintype": "T",
+            "minblperant": 3,
+            "minsnr": 2,
+            "refant": "DV01",
+            "solint": "inf",
+            "solnorm": False,
+        },
+    },
+    "G328.25_B3_12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G328.25_B3_7M12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G328.25_B3_7M12M_robust0": {
+        1: {
+            "calmode": "p",
+            "combine": "scan",
+            "gaintype": "T",
+            "minblperant": 3,
+            "minsnr": 2,
+            "refant": "DV01",
+            "solint": "inf",
+            "solnorm": False,
+        },
+        2: {
+            "calmode": "p",
+            "combine": "scan",
+            "gaintype": "T",
+            "minblperant": 3,
+            "minsnr": 2,
+            "refant": "DV01",
+            "solint": "inf",
+            "solnorm": False,
+        },
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G328.25_B3_7M12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G328.25_B3_7M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G328.25_B3_7M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G328.25_B3_7M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G328.25_B6_12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G328.25_B6_12M_robust0": {
+        1: {"calmode": "p", "combine": "scan", "gaintype": "T", "solint": "inf", "solnorm": False},
+        2: {"calmode": "p", "combine": "scan", "gaintype": "T", "solint": "300s", "solnorm": False},
+        3: {"calmode": "p", "combine": "scan", "gaintype": "T", "solint": "90s", "solnorm": False},
+        4: {"calmode": "p", "combine": "scan", "gaintype": "T", "solint": "60s", "solnorm": False},
+    },
+    "G328.25_B6_12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G328.25_B6_7M12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G328.25_B6_7M12M_robust0": {
+        1: {"calmode": "p", "combine": "scan", "gaintype": "T", "solint": "inf", "solnorm": False},
+        2: {"calmode": "p", "combine": "scan", "gaintype": "T", "solint": "300s", "solnorm": False},
+        3: {"calmode": "p", "combine": "scan", "gaintype": "T", "solint": "200s", "solnorm": False},
+        4: {"calmode": "p", "combine": "scan", "gaintype": "T", "solint": "90s", "solnorm": False},
+    },
+    "G328.25_B6_7M12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G328.25_B6_7M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G328.25_B6_7M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "minsnr": 3, "solint": "inf", "solnorm": False},
+        2: {"calmode": "p", "gaintype": "T", "minsnr": 3, "solint": "inf", "solnorm": False},
+        3: {"calmode": "p", "gaintype": "T", "minsnr": 3, "solint": "100s", "solnorm": False},
+        4: {"calmode": "p", "gaintype": "T", "minsnr": 3, "solint": "60s", "solnorm": False},
+    },
+    "G328.25_B6_7M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G333.60_B3_12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        5: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": False},
+        6: {"calmode": "a", "gaintype": "T", "solint": "inf", "solnorm": False},
+    },
+    "G333.60_B3_12M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": False},
+        2: {"calmode": "p", "gaintype": "T", "solint": "15s", "solnorm": False},
+        3: {"calmode": "p", "gaintype": "T", "solint": "5s", "solnorm": False},
+        4: {"calmode": "p", "gaintype": "T", "solint": "int", "solnorm": False},
+        5: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": False},
+        6: {"calmode": "a", "gaintype": "T", "solint": "inf", "solnorm": False},
+    },
+    "G333.60_B3_12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        5: {"calmode": "a", "gaintype": "T", "solint": "inf", "solnorm": False},
+    },
+    "G333.60_B3_7M12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        5: {"calmode": "a", "gaintype": "T", "solint": "inf", "solnorm": False},
+    },
+    "G333.60_B3_7M12M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": False},
+        2: {"calmode": "p", "gaintype": "T", "solint": "15s", "solnorm": False},
+        3: {"calmode": "p", "gaintype": "T", "solint": "5s", "solnorm": False},
+        4: {"calmode": "p", "gaintype": "T", "solint": "int", "solnorm": False},
+        5: {"calmode": "a", "gaintype": "T", "solint": "inf", "solnorm": False},
+    },
+    "G333.60_B3_7M12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        5: {"calmode": "a", "gaintype": "T", "solint": "inf", "solnorm": False},
+    },
+    "G333.60_B3_7M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        5: {"calmode": "a", "gaintype": "T", "solint": "inf", "solnorm": False},
+    },
+    "G333.60_B3_7M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G333.60_B3_7M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G333.60_B6_12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        5: {"calmode": "a", "gaintype": "T", "solint": "inf", "solnorm": False},
+    },
+    "G333.60_B6_12M_robust0": {
+        1: {"calmode": "p", "combine": "spw", "gaintype": "T", "solint": "inf", "solnorm": False},
+        2: {"calmode": "p", "combine": "spw", "gaintype": "T", "solint": "15s", "solnorm": False},
+        3: {"calmode": "p", "combine": "spw", "gaintype": "T", "solint": "5s", "solnorm": False},
+        4: {"calmode": "p", "combine": "spw", "gaintype": "T", "solint": "int", "solnorm": False},
+        5: {"calmode": "p", "combine": "spw", "gaintype": "T", "solint": "inf", "solnorm": False},
+        6: {"calmode": "a", "combine": "spw", "gaintype": "T", "solint": "inf", "solnorm": False},
+    },
+    "G333.60_B6_12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        5: {"calmode": "a", "gaintype": "T", "solint": "inf", "solnorm": False},
+    },
+    "G333.60_B6_7M12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G333.60_B6_7M12M_robust0": {
+        1: {"calmode": "p", "combine": "spw", "gaintype": "T", "solint": "inf", "solnorm": False},
+        2: {"calmode": "p", "combine": "spw", "gaintype": "T", "solint": "15s", "solnorm": False},
+        3: {"calmode": "p", "combine": "spw", "gaintype": "T", "solint": "5s", "solnorm": False},
+        4: {"calmode": "p", "combine": "spw", "gaintype": "T", "solint": "int", "solnorm": False},
+        5: {"calmode": "a", "combine": "spw", "gaintype": "T", "solint": "inf", "solnorm": False},
+    },
+    "G333.60_B6_7M12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G333.60_B6_7M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G333.60_B6_7M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G333.60_B6_7M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G337.92_B3_12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G337.92_B3_12M_robust0": {
+        1: {"calmode": "p", "combine": "scan", "gaintype": "T", "solint": "inf", "solnorm": False},
+        2: {"calmode": "p", "combine": "scan", "gaintype": "T", "solint": "300s", "solnorm": False},
+        3: {"calmode": "p", "combine": "scan", "gaintype": "T", "solint": "60s", "solnorm": False},
+        4: {"calmode": "p", "combine": "scan", "gaintype": "T", "solint": "30s", "solnorm": False},
+    },
+    "G337.92_B3_12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G337.92_B3_7M12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G337.92_B3_7M12M_robust0": {
+        1: {"calmode": "p", "combine": "scan", "gaintype": "T", "solint": "inf", "solnorm": False},
+        2: {"calmode": "p", "combine": "scan", "gaintype": "T", "solint": "int", "solnorm": False},
+        3: {"calmode": "p", "combine": "scan", "gaintype": "T", "solint": "90s", "solnorm": False},
+        4: {"calmode": "p", "combine": "scan", "gaintype": "T", "solint": "60s", "solnorm": False},
+    },
+    "G337.92_B3_7M12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G337.92_B3_7M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G337.92_B3_7M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G337.92_B3_7M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G337.92_B6_12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G337.92_B6_12M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "300s", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "60s", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "30s", "solnorm": True},
+    },
+    "G337.92_B6_12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G337.92_B6_7M12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G337.92_B6_7M12M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G337.92_B6_7M12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G337.92_B6_7M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G337.92_B6_7M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G337.92_B6_7M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G338.93_B3_12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G338.93_B3_12M_robust-2_bsens": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G338.93_B3_12M_robust0": {
+        1: {"calmode": "p", "combine": "scan", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "combine": "scan", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "combine": "scan", "gaintype": "T", "solint": "60s", "solnorm": True},
+    },
+    "G338.93_B3_12M_robust0_bsens": {
+        1: {"calmode": "p", "combine": "scan", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "combine": "scan", "gaintype": "T", "solint": "60s", "solnorm": True},
+        3: {"calmode": "p", "combine": "scan", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G338.93_B3_12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G338.93_B3_12M_robust2_bsens": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G338.93_B3_7M12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G338.93_B3_7M12M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "combine": "scan", "gaintype": "T", "solint": "60s", "solnorm": True},
+    },
+    "G338.93_B3_7M12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G338.93_B3_7M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G338.93_B3_7M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G338.93_B3_7M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G338.93_B6_12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G338.93_B6_12M_robust-2_bsens": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G338.93_B6_12M_robust0": {
+        1: {"calmode": "p", "gaintype": "G", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "G", "solint": "60s", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "G", "solint": "30s", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "G", "solint": "20s", "solnorm": True},
+        5: {"calmode": "p", "gaintype": "G", "solint": "10s", "solnorm": True},
+        6: {"calmode": "p", "gaintype": "G", "solint": "5s", "solnorm": True},
+    },
+    "G338.93_B6_12M_robust0_bsens": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "60s", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "30s", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "20s", "solnorm": True},
+        5: {"calmode": "p", "gaintype": "T", "solint": "10s", "solnorm": True},
+        6: {"calmode": "p", "gaintype": "T", "solint": "5s", "solnorm": True},
+    },
+    "G338.93_B6_12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G338.93_B6_12M_robust2_bsens": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G338.93_B6_7M12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G338.93_B6_7M12M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G338.93_B6_7M12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G338.93_B6_7M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G338.93_B6_7M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G338.93_B6_7M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G351.77_B3_12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G351.77_B3_12M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "minsnr": 2, "solint": "inf", "solnorm": False},
+        2: {"calmode": "p", "gaintype": "T", "minsnr": 2, "solint": "90s", "solnorm": False},
+        3: {"calmode": "p", "gaintype": "T", "minsnr": 2, "solint": "60s", "solnorm": False},
+        4: {"calmode": "p", "gaintype": "T", "minsnr": 2, "solint": "30s", "solnorm": False},
+    },
+    "G351.77_B3_12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G351.77_B3_7M12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G351.77_B3_7M12M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "minsnr": 2, "solint": "inf", "solnorm": False},
+        2: {"calmode": "p", "gaintype": "T", "minsnr": 2, "solint": "90s", "solnorm": False},
+        3: {"calmode": "p", "gaintype": "T", "minsnr": 2, "solint": "60s", "solnorm": False},
+        4: {"calmode": "p", "gaintype": "T", "minsnr": 2, "solint": "30s", "solnorm": False},
+    },
+    "G351.77_B3_7M12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G351.77_B3_7M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G351.77_B3_7M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G351.77_B3_7M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G351.77_B6_12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G351.77_B6_12M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "minsnr": 2, "solint": "inf", "solnorm": False},
+        2: {"calmode": "p", "gaintype": "T", "minsnr": 2, "solint": "150s", "solnorm": False},
+        3: {"calmode": "p", "gaintype": "T", "minsnr": 2, "solint": "60s", "solnorm": False},
+        4: {"calmode": "p", "gaintype": "T", "minsnr": 2, "solint": "30s", "solnorm": False},
+    },
+    "G351.77_B6_12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G351.77_B6_7M12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G351.77_B6_7M12M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "minsnr": 3, "solint": "inf", "solnorm": False},
+        2: {"calmode": "p", "gaintype": "T", "minsnr": 3, "solint": "300s", "solnorm": False},
+        3: {"calmode": "p", "gaintype": "T", "minsnr": 3, "solint": "150s", "solnorm": False},
+        4: {"calmode": "p", "gaintype": "T", "minsnr": 3, "solint": "60s", "solnorm": False},
+    },
+    "G351.77_B6_7M12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G351.77_B6_7M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G351.77_B6_7M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "minsnr": 3, "solint": "inf", "solnorm": False},
+        2: {"calmode": "p", "gaintype": "T", "minsnr": 3, "solint": "inf", "solnorm": False},
+        3: {"calmode": "p", "gaintype": "T", "minsnr": 3, "solint": "100s", "solnorm": False},
+        4: {"calmode": "p", "gaintype": "T", "minsnr": 3, "solint": "60s", "solnorm": False},
+    },
+    "G351.77_B6_7M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G353.41_B3_12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G353.41_B3_12M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        5: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        6: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G353.41_B3_12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G353.41_B3_7M12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G353.41_B3_7M12M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        5: {"calmode": "p", "gaintype": "G", "solint": "inf", "solnorm": False},
+        6: {"calmode": "p", "gaintype": "G", "solint": "inf", "solnorm": False},
+    },
+    "G353.41_B3_7M12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G353.41_B3_7M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G353.41_B3_7M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G353.41_B3_7M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G353.41_B6_12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G353.41_B6_12M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        5: {"calmode": "p", "gaintype": "G", "solint": "inf", "solnorm": False},
+        6: {"calmode": "p", "gaintype": "G", "solint": "inf", "solnorm": False},
+    },
+    "G353.41_B6_12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G353.41_B6_7M12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G353.41_B6_7M12M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        5: {"calmode": "p", "gaintype": "G", "solint": "inf", "solnorm": False},
+        6: {"calmode": "p", "gaintype": "G", "solint": "inf", "solnorm": False},
+    },
+    "G353.41_B6_7M12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G353.41_B6_7M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G353.41_B6_7M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "G353.41_B6_7M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM1_B3_12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM1_B3_12M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": False, "minsnr": 3},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": False, "minsnr": 3},
+        3: {"calmode": "p", "gaintype": "T", "solint": "300s", "solnorm": False, "minsnr": 3},
+        4: {"calmode": "p", "gaintype": "T", "solint": "int", "solnorm": False, "minsnr": 3},
+    },
+    "W43-MM1_B3_12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM1_B3_7M12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM1_B3_7M12M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM1_B3_7M12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM1_B3_7M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM1_B3_7M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM1_B3_7M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM1_B6_12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM1_B6_12M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM1_B6_12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM1_B6_7M12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM1_B6_7M12M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM1_B6_7M12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM1_B6_7M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM1_B6_7M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM1_B6_7M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM2_B3_12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM2_B3_12M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True, "minsnr": 3},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True, "minsnr": 3},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True, "minsnr": 3},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True, "minsnr": 3},
+    },
+    "W43-MM2_B3_12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM2_B3_7M12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM2_B3_7M12M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM2_B3_7M12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM2_B3_7M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM2_B3_7M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM2_B3_7M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM2_B6_12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM2_B6_12M_robust0": {
+        1: {"calmode": "p", "gaintype": "G", "solint": "inf", "solnorm": False},
+        2: {"calmode": "p", "gaintype": "G", "solint": "1200s", "solnorm": False},
+        3: {"calmode": "p", "gaintype": "G", "solint": "600s", "solnorm": False},
+        4: {"calmode": "p", "gaintype": "G", "solint": "300s", "solnorm": False},
+        5: {"calmode": "p", "gaintype": "G", "solint": "int", "solnorm": False},
+    },
+    "W43-MM2_B6_12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM2_B6_7M12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM2_B6_7M12M_robust0": {
+        1: {"calmode": "p", "gaintype": "G", "solint": "inf", "solnorm": False},
+        2: {"calmode": "p", "gaintype": "G", "solint": "500s", "solnorm": False},
+        3: {"calmode": "p", "gaintype": "G", "solint": "int", "solnorm": False},
+        4: {"calmode": "p", "gaintype": "G", "solint": "int", "solnorm": False},
+    },
+    "W43-MM2_B6_7M12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM2_B6_7M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM2_B6_7M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM2_B6_7M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM3_B3_12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM3_B3_12M_robust0": {
+        1: {"calmode": "p", "gaintype": "G", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "200s", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "int", "solnorm": True},
+        5: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM3_B3_12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM3_B3_7M12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM3_B3_7M12M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": False},
+        2: {"calmode": "p", "gaintype": "T", "solint": "300s", "solnorm": False},
+        3: {"calmode": "p", "gaintype": "T", "solint": "int", "solnorm": False},
+        4: {"calmode": "p", "gaintype": "T", "solint": "int", "solnorm": False},
+    },
+    "W43-MM3_B3_7M12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM3_B3_7M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM3_B3_7M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM3_B3_7M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM3_B6_12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM3_B6_12M_robust0": {
+        1: {"calmode": "p", "gaintype": "G", "solint": "inf", "solnorm": False},
+        2: {"calmode": "p", "gaintype": "G", "solint": "1200s", "solnorm": False},
+        3: {"calmode": "p", "gaintype": "G", "solint": "600s", "solnorm": False},
+        4: {"calmode": "p", "gaintype": "G", "solint": "300s", "solnorm": False},
+        5: {"calmode": "p", "gaintype": "G", "solint": "int", "solnorm": False},
+    },
+    "W43-MM3_B6_12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM3_B6_7M12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM3_B6_7M12M_robust0": {
+        1: {"calmode": "p", "gaintype": "G", "solint": "inf", "solnorm": False},
+        2: {"calmode": "p", "gaintype": "G", "solint": "500s", "solnorm": False},
+        3: {"calmode": "p", "gaintype": "G", "solint": "int", "solnorm": False},
+        4: {"calmode": "p", "gaintype": "G", "solint": "int", "solnorm": False},
+    },
+    "W43-MM3_B6_7M12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM3_B6_7M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM3_B6_7M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W43-MM3_B6_7M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W51-E_B3_12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W51-E_B3_12M_robust0": {
+        1: {"calmode": "p", "gaintype": "G", "minsnr": 5, "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "minsnr": 5, "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "minsnr": 5, "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "minsnr": 5, "solint": "inf", "solnorm": True},
+        5: {"calmode": "p", "gaintype": "T", "minsnr": 5, "solint": "int", "solnorm": True},
+        6: {"calmode": "p", "gaintype": "T", "minsnr": 5, "solint": "int", "solnorm": True},
+        7: {"calmode": "p", "gaintype": "T", "minsnr": 5, "solint": "inf", "solnorm": True},
+    },
+    "W51-E_B3_12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W51-E_B3_7M12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W51-E_B3_7M12M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "minsnr": 5, "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "minsnr": 5, "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "minsnr": 5, "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "minsnr": 5, "solint": "inf", "solnorm": True},
+    },
+    "W51-E_B3_7M12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W51-E_B3_7M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W51-E_B3_7M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W51-E_B3_7M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W51-E_B6_12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W51-E_B6_12M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "minsnr": 5, "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "minsnr": 5, "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "minsnr": 5, "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "minsnr": 5, "solint": "inf", "solnorm": True},
+        5: {"calmode": "p", "gaintype": "T", "minsnr": 5, "solint": "inf", "solnorm": True},
+        6: {"calmode": "p", "gaintype": "T", "minsnr": 5, "solint": "int", "solnorm": True},
+        7: {"calmode": "p", "gaintype": "T", "minsnr": 5, "solint": "int", "solnorm": True},
+    },
+    "W51-E_B6_12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W51-E_B6_7M12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W51-E_B6_7M12M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "minsnr": 5, "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "minsnr": 5, "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "minsnr": 5, "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "minsnr": 5, "solint": "inf", "solnorm": True},
+        5: {"calmode": "p", "gaintype": "T", "minsnr": 5, "solint": "inf", "solnorm": True},
+        6: {"calmode": "p", "gaintype": "T", "minsnr": 5, "solint": "inf", "solnorm": True},
+        7: {"calmode": "p", "gaintype": "T", "minsnr": 5, "solint": "inf", "solnorm": True},
+    },
+    "W51-E_B6_7M12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W51-E_B6_7M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W51-E_B6_7M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W51-E_B6_7M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W51-IRS2_B3_12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W51-IRS2_B3_12M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W51-IRS2_B3_12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W51-IRS2_B3_7M12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W51-IRS2_B3_7M12M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W51-IRS2_B3_7M12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W51-IRS2_B3_7M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W51-IRS2_B3_7M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W51-IRS2_B3_7M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W51-IRS2_B6_12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W51-IRS2_B6_12M_robust0": {
+        1: {"calmode": "p", "combine": "", "gaintype": "T", "minsnr": 5, "solint": "60s", "solnorm": True},
+        2: {"calmode": "p", "combine": "", "gaintype": "T", "minsnr": 5, "solint": "60s", "solnorm": True},
+        3: {"calmode": "p", "combine": "", "gaintype": "T", "minsnr": 5, "solint": "60s", "solnorm": True},
+        4: {"calmode": "p", "combine": "", "gaintype": "T", "minsnr": 5, "solint": "60s", "solnorm": True},
+        5: {"calmode": "p", "combine": "", "gaintype": "T", "minsnr": 5, "solint": "60s", "solnorm": False},
+        6: {"calmode": "p", "combine": "", "gaintype": "T", "minsnr": 5, "solint": "60s", "solnorm": False},
+        7: {"calmode": "p", "combine": "", "gaintype": "T", "minsnr": 5, "solint": "60s", "solnorm": False},
+        8: {"calmode": "p", "gaintype": "T", "minsnr": 5, "solint": "inf", "solnorm": False},
+        9: {"calmode": "a", "gaintype": "T", "minsnr": 5, "solint": "inf", "solnorm": False},
+    },
+    "W51-IRS2_B6_12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W51-IRS2_B6_7M12M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W51-IRS2_B6_7M12M_robust0": {
+        1: {"calmode": "p", "combine": "", "gaintype": "T", "minsnr": 5, "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "combine": "", "gaintype": "T", "minsnr": 5, "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "combine": "", "gaintype": "T", "minsnr": 5, "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "combine": "", "gaintype": "T", "minsnr": 5, "solint": "inf", "solnorm": True},
+        5: {"calmode": "p", "combine": "", "gaintype": "T", "minsnr": 5, "solint": "inf", "solnorm": False},
+        6: {"calmode": "p", "combine": "", "gaintype": "T", "minsnr": 5, "solint": "inf", "solnorm": False},
+        7: {"calmode": "p", "combine": "", "gaintype": "T", "minsnr": 5, "solint": "inf", "solnorm": False},
+    },
+    "W51-IRS2_B6_7M12M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W51-IRS2_B6_7M_robust-2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W51-IRS2_B6_7M_robust0": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+    "W51-IRS2_B6_7M_robust2": {
+        1: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        2: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        3: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+        4: {"calmode": "p", "gaintype": "T", "solint": "inf", "solnorm": True},
+    },
+}
 
 
+selfcal_pars = selfcal_pars_default.copy()
+for key in selfcal_pars_custom:
+    for iternum in selfcal_pars_custom[key]:
+        if iternum in selfcal_pars[key]:
+            selfcal_pars[key][iternum].update(selfcal_pars_custom[key][iternum])
+        else:
+            selfcal_pars[key][iternum] = selfcal_pars_custom[key][iternum]
 
+del selfcal_pars["G338.93_B3_12M_robust0"][4]
+del selfcal_pars["G338.93_B3_12M_robust0_bsens"][4]
+del selfcal_pars["G338.93_B3_7M12M_robust0"][3]
+del selfcal_pars["G338.93_B3_7M12M_robust0"][4]
+del selfcal_pars["G327.29_B3_12M_robust0"][3]
+del selfcal_pars["G327.29_B3_12M_robust0"][4]
+del selfcal_pars["G327.29_B3_7M12M_robust0"][2]
+del selfcal_pars["G327.29_B3_7M12M_robust0"][3]
+del selfcal_pars["G327.29_B3_7M12M_robust0"][4]
+
+
+line_imaging_parameters_default = {
+    "{0}_{1}_{2}_robust{3}{4}".format(field, band, array, robust, contsub): {
+        "niter": 5000000,
+        "threshold": "3sigma",
+        "robust": robust,
+        "weighting": "briggs",
+        "deconvolver": "multiscale",
+        "scales": [0, 5, 15],
+        "gridder": "mosaic",
+        "specmode": "cube",
+        "outframe": "LSRK",
+        "veltype": "radio",
+        "usemask": "pb",
+        "pblimit": 0.05,
+        "pbmask": 0.1,
+        "perchanweightdensity": False,
+        "interactive": False,
+        "mask_out_endchannels": 2,
+    }
+    for field in allfields
+    for band in ("B3", "B6")
+    for array in ("12M", "7M12M", "7M")
+    for robust in (-2, 0, 2)
+    for contsub in ("", "_contsub")
+}
+
+
+for key in line_imaging_parameters_default:
+    if "7M12M" in key:
+        line_imaging_parameters_default[key]["scales"] = [0, 5, 15, 45]
+        line_imaging_parameters_default[key]["threshold"] = "10sigma"
+        line_imaging_parameters_default[key]["niter"] = 5000
+
+
+line_imaging_parameters = copy.deepcopy(line_imaging_parameters_default)
+
+line_imaging_parameters_custom = {
+    "G008.67_B3_12M_robust0": {
+        "threshold": "8mJy",
+        "startmodel": "G008.67_B3_uid___A001_X1296_X1c1_continuum_merged_12M_robust0_selfcal5_finaliter",
+    },
+    "G008.67_B3_12M_robust0_h41a": {
+        "threshold": "12.5mJy",  # noise ~ 2.5mJy in channels off line peak.
+        "startmodel": "G008.67_B3_uid___A001_X1296_X1c1_continuum_merged_12M_robust0_selfcal5_finaliter",
+        "deconvolver": "multiscale",
+        "scales": [0, 5, 10, 20, 40],  # 4.9pix per sqrt(bmaj*bmean), pix=0.11 arcsec, max scale ~ 4.4 arcsec
+        "gain": 0.08,
+    },
+    "G008.67_B6_12M_robust0": {
+        "threshold": "33mJy",  # "28mJy",#estimated noise: 9-11 mJy, from sio-only cube
+        "startmodel": "G008.67_B6_uid___A001_X1296_X1b7_continuum_merged_12M_robust0_selfcal5_finaliter",
+    },
+    "G008.67_B6_12M_robust0_sio": {
+        "threshold": "33mJy",  # typical rms is 9-11 mJy, using 3sigma for threshold (14 Dec. 2020)
+        "startmodel": "G008.67_B6_uid___A001_X1296_X1b7_continuum_merged_12M_robust0_selfcal5_finaliter",
+    },
+    "G010.62_B3_12M_robust0": {
+        "threshold": "6mJy",
+        "startmodel": "G010.62_B3_uid___A001_X1296_X1e5_continuum_merged_12M_robust0_selfcal9_finaliter",
+    },
+    "G010.62_B3_12M_robust0_h41a": {
+        "threshold": "8mJy",  # noise ~ 2mJy in channels off line peak.
+        "startmodel": "G010.62_B3_uid___A001_X1296_X1e5_continuum_merged_12M_robust0_selfcal9_finaliter",
+        "deconvolver": "multiscale",
+        "scales": [0, 4, 8, 16, 32],  # 3.5pix per sqrt(bmaj*bmean), pix=0.14 arcsec, max scale ~ 4.5 arcsec
+        "gain": 0.08,
+    },
+    "G010.62_B6_12M_robust0": {
+        "threshold": "30mJy",  # estimated noise: 2.8-3.2 mJy, from sio-only cube.  ~5 to 6 mJy, from full cube spw4.  bumped to 5-sigma
+        "startmodel": "G010.62_B6_uid___A001_X1296_X1db_continuum_merged_12M_robust0_selfcal5_finaliter",
+        "perchanweightdensity": True,  # change Mar 12, 2021, based on some old suggestions from Ryan Loomis and Jan-Willem Steeb
+    },
+    "G010.62_B6_12M_robust0_sio": {
+        "threshold": "9.6mJy",  # typical rms is 2.8-3.2 mJy, using 3sigma for threshold (14 Dec. 2020)
+        "startmodel": "G010.62_B6_uid___A001_X1296_X1db_continuum_merged_12M_robust0_selfcal5_finaliter",
+    },
+    "G012.80_B3_12M_robust0": {
+        "threshold": "18mJy",  # ~2-sigma
+        "startmodel": "G012.80_B3_uid___A001_X1296_X1fb_continuum_merged_12M_robust0_selfcal7_finaliter",
+    },
+    "G012.80_B3_12M_robust0_h41a": {
+        "threshold": "16mJy",  # noise ~ 4.0mJy in channels off line peak.
+        "startmodel": "G012.80_B3_uid___A001_X1296_X1fb_continuum_merged_12M_robust0_selfcal7_finaliter",
+        "deconvolver": "multiscale",
+        "scales": [0, 5, 10, 20],  # 5pix per sqrt(bmaj*bmean), pix=0.35 arcsec, max scale ~ 7 arcsec
+        "gain": 0.08,
+    },
+    "G012.80_B6_12M_robust0": {
+        "threshold": "39mJy",  # "24mJy", #estimated noise: 13 mJy, from sio-only cube
+        "startmodel": "G012.80_B6_uid___A001_X1296_X1ef_continuum_merged_12M_robust0_selfcal6_finaliter",
+    },
+    "G012.80_B6_12M_robust0_sio": {
+        "threshold": "39mJy",  # typical rms values are 10-13 mJy, using 3sigma as threshold (14 Dec. 2020)
+        "startmodel": "G012.80_B6_uid___A001_X1296_X1ef_continuum_merged_12M_robust0_selfcal6_finaliter",
+    },
+    "G327.29_B3_12M_robust0": {
+        "threshold": "6mJy",
+        "startmodel": "G327.29_B3_uid___A001_X1296_X17d_continuum_merged_12M_robust0_selfcal2_finaliter",
+    },
+    "G327.29_B3_12M_robust0_h41a": {
+        "threshold": "10mJy",  # noise ~ 2.5mJy in channels off line peak.
+        "startmodel": "G327.29_B3_uid___A001_X1296_X17d_continuum_merged_12M_robust0_selfcal2_finaliter",
+        "deconvolver": "multiscale",
+        "scales": [0, 4, 8, 16, 32, 64],  # 3.9pix per sqrt(bmaj*bmean), pix=0.11 arcsec, max scale ~ 7 arcsec
+        "gain": 0.08,
+    },
+    "G327.29_B6_12M_robust0": {
+        "threshold": "34.5mJy",  # "6mJy", #estimated noise: 9.5-11.5 mJy, from sio-only cube
+        "startmodel": "G327.29_B6_uid___A001_X1296_X175_continuum_merged_12M_robust0_selfcal5_finaliter",
+    },
+    "G327.29_B6_12M_robust0_sio": {
+        "threshold": "34.5mJy",  # typical rms 9.5-11.5 mJy, using 3sigma for threshold (14 Dec. 2020)
+        "startmodel": "G327.29_B6_uid___A001_X1296_X175_continuum_merged_12M_robust0_selfcal5_finaliter",
+    },
+    "G328.25_B3_12M_robust0": {
+        "threshold": "6mJy",
+        "startmodel": "G328.25_B3_uid___A001_X1296_X16d_continuum_merged_12M_robust0_selfcal4_finaliter",
+    },
+    "G328.25_B3_12M_robust0_h41a": {
+        "threshold": "14mJy",  # noise ~ 3.5mJy in channels off line peak.
+        "startmodel": "G328.25_B3_uid___A001_X1296_X16d_continuum_merged_12M_robust0_selfcal4_finaliter",
+        "deconvolver": "multiscale",
+        "scales": [0, 5, 10, 20, 40],  # 5.6pix per sqrt(bmaj*bmean), pix=0.11 arcsec, max scale ~ 4.4 arcsec
+        "gain": 0.08,
+    },
+    "G328.25_B6_12M_robust0": {
+        "threshold": "63mJy",  # "6mJy", #estimated noise: 15-21 mJy, from sio-only cube
+        "startmodel": "G328.25_B6_uid___A001_X1296_X163_continuum_merged_12M_robust0_selfcal4_finaliter",
+    },
+    "G328.25_B6_12M_robust0_sio": {
+        "threshold": "63mJy",  # typical rms is 15-21 mJy, using 3sigma for threshold (14 Dec. 2020)
+        "startmodel": "G328.25_B6_uid___A001_X1296_X163_continuum_merged_12M_robust0_selfcal4_finaliter",
+    },
+    "G333.60_B3_12M_robust0": {
+        "threshold": "6mJy",
+        "startmodel": "G333.60_B3_uid___A001_X1296_X1a3_continuum_merged_12M_robust0_selfcal6_finaliter",
+    },
+    "G333.60_B3_12M_robust0_h41a": {
+        "threshold": "8mJy",  # noise ~ 2mJy in channels off line peak.
+        "startmodel": "G333.60_B3_uid___A001_X1296_X1a3_continuum_merged_12M_robust0_selfcal6_finaliter",
+        "deconvolver": "multiscale",
+        "scales": [0, 4, 8, 16, 32, 64],  # 4.6pix per sqrt(bmaj*bmean), pix=0.11 arcsec, max scale ~ 7arcsec
+        "gain": 0.08,
+    },
+    "G333.60_B6_12M_robust0": {
+        "threshold": "15.6mJy",  # "6mJy",#estimated noise: 4.3-5.2 mJy, from sio-only cube
+        "startmodel": "G333.60_B6_uid___A001_X1296_X19b_continuum_merged_12M_robust0_selfcal6_finaliter",
+    },
+    "G333.60_B6_12M_robust0_sio": {
+        "threshold": "10.4mJy",  # typical rms is 4.3-5.2 mJy, using 3sigma for threshold (14 Dec. 2020)
+        "startmodel": "G333.60_B6_uid___A001_X1296_X19b_continuum_merged_12M_robust0_selfcal6_finaliter",
+    },
+    "G337.92_B3_12M_robust0": {
+        "threshold": "5mJy",
+        "startmodel": "G337.92_B3_uid___A001_X1296_X147_continuum_merged_12M_robust0_selfcal4_finaliter",
+    },
+    "G337.92_B3_12M_robust0_h41a": {
+        "threshold": "8mJy",  # noise ~ 2mJy in channels off line peak.
+        "startmodel": "G337.92_B3_uid___A001_X1296_X147_continuum_merged_12M_robust0_selfcal4_finaliter",
+        "deconvolver": "multiscale",
+        "scales": [0, 4, 8, 16, 32, 64],  # 3.7pix per sqrt(bmaj*bmean), pix=0.11 arcsec, max scale ~ 7arcsec
+        "gain": 0.08,
+    },
+    "G337.92_B6_12M_robust0": {
+        "threshold": "16.8mJy",  # "12mJy", #estimated noise: 4.8-5.6 mJy, from sio-only cube
+        "startmodel": "G337.92_B6_uid___A001_X1296_X13b_continuum_merged_12M_robust0_selfcal4_finaliter",
+    },
+    "G337.92_B6_12M_robust0_sio": {
+        "threshold": "16.8mJy",  # typical rms 4.8-5.6 mJy, using 3sigma for threshold (14 Dec. 2020)
+        "startmodel": "G337.92_B6_uid___A001_X1296_X13b_continuum_merged_12M_robust0_selfcal4_finaliter",
+    },
+    "G338.93_B3_12M_robust0": {
+        "threshold": "5mJy",
+        "startmodel": "G338.93_B3_uid___A001_X1296_X159_continuum_merged_12M_robust0_selfcal3_finaliter",
+    },
+    "G338.93_B3_12M_robust0_h41a": {
+        "threshold": "8mJy",  # noise ~ 2mJy in channels off line peak.
+        "startmodel": "G338.93_B3_uid___A001_X1296_X159_continuum_merged_12M_robust0_selfcal3_finaliter",
+        "deconvolver": "multiscale",
+        "scales": [0, 4, 8, 16, 32],  # 4.2pix per sqrt(bmaj*bmean), pix=0.11 arcsec, max scale ~ 3.5arcsec
+        "gain": 0.08,
+    },
+    "G338.93_B3_12M_robust0_n2hp": {
+        "threshold": "5mJy",
+        "startmodel": "G338.93_B3_uid___A001_X1296_X159_continuum_merged_12M_robust0_selfcal3_finaliter",
+    },
+    "G338.93_B6_12M_robust0": {
+        "threshold": "18mJy",  # "6mJy", #estimated noise: 5-6 mJy, from sio-only cube
+        "startmodel": "G338.93_B6_uid___A001_X1296_X14f_continuum_merged_12M_robust0_selfcal6_finaliter",
+    },
+    "G338.93_B6_12M_robust0_sio": {
+        "threshold": "12mJy",  # typical rms is 5-6 mJy, using 3sigma for threshold (14 Dec. 2020)
+        "startmodel": "G338.93_B6_uid___A001_X1296_X14f_continuum_merged_12M_robust0_selfcal6_finaliter",
+        "usemask": "user",
+        "mask": "G338.93_B6_spw1_12M_sio.image_2sigma_e2_d8.mask",
+    },
+    "G351.77_B3_12M_robust0": {
+        "threshold": "30mJy",
+        "startmodel": "G351.77_B3_uid___A001_X1296_X209_continuum_merged_12M_robust0_selfcal4_finaliter",
+    },
+    "G351.77_B3_12M_robust0_h41a": {
+        "threshold": "16mJy",  # noise ~ 4mJy in channels off line peak.
+        "startmodel": "G351.77_B3_uid___A001_X1296_X209_continuum_merged_12M_robust0_selfcal4_finaliter",
+        "deconvolver": "multiscale",
+        "scales": [0, 5, 10, 20],  # 5pix per sqrt(bmaj*bmean), pix=0.35 arcsec, max scale ~7arcsec
+        "gain": 0.08,
+    },
+    "G351.77_B6_12M_robust0": {
+        "threshold": "80mJy",  # "6mJy",#estimated noise: 12-16 mJy, from sio-only cube
+        "startmodel": "G351.77_B6_uid___A001_X1296_X201_continuum_merged_12M_robust0_selfcal4_finaliter",
+    },
+    "G351.77_B6_12M_robust0_sio": {
+        "threshold": "80mJy",  # typical rms is 12-16 mJy, using 5sigma for threshold (8 Mar 2021)
+        "startmodel": "G351.77_B6_uid___A001_X1296_X201_continuum_merged_12M_robust0_selfcal4_finaliter",
+    },
+    "G353.41_B3_12M_robust0": {
+        "threshold": "6mJy",
+        "startmodel": "G353.41_B3_uid___A001_X1296_X1d5_continuum_merged_12M_robust0_selfcal6_finaliter",
+    },
+    "G353.41_B3_12M_robust0_h41a": {
+        "threshold": "16mJy",  # noise ~4mJy in channels off line peak.
+        "startmodel": "G353.41_B3_uid___A001_X1296_X1d5_continuum_merged_12M_robust0_selfcal6_finaliter",
+        "deconvolver": "multiscale",
+        "scales": [0, 5, 10, 20],  # 4.8pix per sqrt(bmaj*bmean), pix= 0.35arcsec, max scale ~7arcsec
+        "gain": 0.08,
+    },
+    "G353.41_B6_12M_robust0": {
+        "threshold": "48mJy",  # "6mJy", #estimated noise: 12.5-16 mJy, from sio-only cube
+        "startmodel": "G353.41_B6_uid___A001_X1296_X1c9_continuum_merged_12M_robust0_selfcal6_finaliter",
+    },
+    "G353.41_B6_12M_robust0_sio": {
+        "threshold": "48mJy",  # typical rms is 12.5-16 mJy, using 3sigma for threshold (14 Dec. 2020)
+        "startmodel": "G353.41_B6_uid___A001_X1296_X1c9_continuum_merged_12M_robust0_selfcal6_finaliter",
+    },
+    "W43-MM1_B3_12M_robust0": {
+        "threshold": "6mJy",
+        "startmodel": "W43-MM1_B3_uid___A001_X1296_X1af_continuum_merged_12M_robust0_selfcal4_finaliter",
+    },
+    "W43-MM1_B3_12M_robust0_h41a": {
+        "threshold": "4mJy",  # noise ~1mJy in channels off line peak.
+        "startmodel": "W43-MM1_B3_uid___A001_X1296_X1af_continuum_merged_12M_robust0_selfcal4_finaliter",
+        "deconvolver": "multiscale",
+        "scales": [0, 4, 8, 16, 32],  # 4.1pix per sqrt(bmaj*bmean), pix= 0.11arcsec, max scale ~3.5arcsec
+        "gain": 0.08,
+    },
+    "W43-MM2_B3_12M_robust0": {
+        "threshold": "6mJy",
+        "startmodel": "W43-MM2_B3_uid___A001_X1296_X11b_continuum_merged_12M_robust0_selfcal4_finaliter",
+    },
+    "W43-MM2_B3_12M_robust0_h41a": {
+        "threshold": "4mJy",  # noise ~1mJy in channels off line peak.
+        "startmodel": "W43-MM2_B3_uid___A001_X1296_X11b_continuum_merged_12M_robust0_selfcal4_finaliter",
+        "deconvolver": "multiscale",
+        "scales": [0, 4, 8, 16, 32, 64],  # 3.7pix per sqrt(bmaj*bmean), pix= 0.08arcsec, max scale ~5.1arcsec
+        "gain": 0.08,
+    },
+    "W43-MM2_B3_12M_robust0_13cs_2-1": {
+        "threshold": "2mJy",  # sigma in brighter channel ~ 1mJy
+        "startmodel": "W43-MM2_B3_uid___A001_X1296_X11b_continuum_merged_12M_robust0_selfcal4_finaliter",
+        "deconvolver": "multiscale",
+        "scales": [0, 4, 13],  # >~ 4 pixels per bmaj, not too extended emission
+    },
+    "W43-MM2_B3_12M_robust0_13cs_2-1_contsub": {"threshold": "4mJy", "deconvolver": "multiscale", "scales": [0, 4, 13]},
+    "W43-MM2_B3_12M_robust0_h2cs_322-221": {
+        "threshold": "4mJy",  # sigma in brighter channel ~ 1.3mJy
+        "startmodel": "W43-MM2_B3_uid___A001_X1296_X11b_continuum_merged_12M_robust0_selfcal4_finaliter",
+        "deconvolver": "multiscale",
+        "scales": [0, 4, 12],  # 4 pixels per bmaj, not too extended emission
+    },
+    "W43-MM2_B3_12M_robust0_h2cs_312-211": {
+        "threshold": "4mJy",  # sigma in brighter channel ~ 1.3mJy
+        "startmodel": "W43-MM2_B3_uid___A001_X1296_X11b_continuum_merged_12M_robust0_selfcal4_finaliter",
+        "deconvolver": "multiscale",
+        "scales": [0, 4, 12],  # 4 pixels per bmaj, not too extended emission
+    },
+    "W43-MM2_B6_12M_robust0": {
+        "threshold": "8.1mJy",  # "6mJy", #estimated noise: 2.7 mJy, from sio-only cube
+        "startmodel": "W43-MM2_B6_uid___A001_X1296_X113_continuum_merged_12M_robust0_selfcal5_finaliter",
+        "imsize": [1372, 1372],
+    },
+    "W43-MM2_B6_12M_robust0_12co": {
+        "threshold": "8.5mJy",  # sig 1.5-2 mJy
+        "scales": [0, 6, 18, 54],
+        "startmodel": "W43-MM2_B6_uid___A001_X1296_X113_continuum_merged_12M_robust0_selfcal5_finaliter",
+        "imsize": [1372, 1372],
+        # "usemask": "pb",
+        # "mask": "imaging_results/W43-MM2_B6_spw5_12M_12co_multi_2.5sigma_e2_d5.mask"
+    },
+    "W43-MM2_B6_12M_robust0_sio": {
+        "threshold": "6.8mJy",  # sig 2.7 mJy, before 8.5 mJy
+        "deconvolver": "multiscale",
+        "scales": [0, 6, 18, 36],
+        "startmodel": "W43-MM2_B6_uid___A001_X1296_X113_continuum_merged_12M_robust0_selfcal5_finaliter",
+        "imsize": [1372, 1372],
+    },
+    "W43-MM2_B6_12M_robust0_contsub": {
+        "threshold": "8.5mJy",
+        "deconvolver": "multiscale",
+        "scales": [0, 6, 18, 36],
+        "imsize": [1372, 1372],
+    },
+    "W43-MM2_B6_7M12M_robust0": {
+        "threshold": "13mJy",
+        "startmodel": "W43-MM2_B6_uid___A001_X1296_X113_continuum_merged_12M_robust0_selfcal5_finaliter",
+        "pbmask": 0.2,
+        "imsize": [1372, 1372],
+    },
+    "W43-MM2_B6_7M12M_robust2": {
+        "threshold": "13mJy",
+        "startmodel": "W43-MM2_B6_uid___A001_X1296_X113_continuum_merged_12M_robust0_selfcal5_finaliter",
+        "pbmask": 0.2,
+        "imsize": [1372, 1372],
+    },
+    "W43-MM2_B6_12M_robust0_c18o": {
+        "threshold": "15mJy",  # sigma in empty channel ~ 5mJy
+        "startmodel": "W43-MM2_B6_uid___A001_X1296_X113_continuum_merged_12M_robust0_selfcal5_finaliter",
+        "deconvolver": "multiscale",
+        "scales": [0, 7, 22],  # 7 pixels per bmaj, extended emission
+        "imsize": [1344, 1344],
+    },
+    "W43-MM2_B6_12M_robust0_ocs_19-18": {
+        "threshold": "8.4mJy",
+        "startmodel": "W43-MM2_B6_uid___A001_X1296_X113_continuum_merged_12M_robust0_selfcal5_finaliter",
+        "deconvolver": "multiscale",
+        "scales": [0, 7, 21],
+        "imsize": [1344, 1344],
+    },
+    "W43-MM2_B6_12M_robust0_oc33s_18-17": {
+        "threshold": "8.4mJy",  # sigma ~ 2.8mJy
+        "startmodel": "W43-MM2_B6_uid___A001_X1296_X113_continuum_merged_12M_robust0_selfcal5_finaliter",
+        "deconvolver": "multiscale",
+        "scales": [0, 7, 21],  # 7 pixels per bmaj, not too extended emission
+        "imsize": [1344, 1344],  # automatic imsize 1280 was too small
+    },
+    "W43-MM2_B6_12M_robust0_13cs_5-4": {
+        "threshold": "8.4mJy",  # sigma ~ 2.8mJy
+        "startmodel": "W43-MM2_B6_uid___A001_X1296_X113_continuum_merged_12M_robust0_selfcal5_finaliter",
+        "deconvolver": "multiscale",
+        "scales": [0, 7, 21],  # 7 pixels per bmaj, not too extended emission
+    },
+    "W43-MM2_B6_12M_robust0_so_6-5": {
+        "threshold": "8.4mJy",  #
+        "startmodel": "W43-MM2_B6_uid___A001_X1296_X113_continuum_merged_12M_robust0_selfcal5_finaliter",
+        "deconvolver": "multiscale",
+        "scales": [0, 7, 21],  # 7 pixels per bmaj, extended emission
+        "imsize": [1344, 1344],  # automatic imsize 1280 was too small
+    },
+    "W43-MM3_B3_12M_robust0": {
+        "threshold": "6mJy",
+        "startmodel": "W43-MM3_B3_uid___A001_X1296_X12f_continuum_merged_12M_robust0_selfcal5_finaliter",
+    },
+    "W43-MM3_B3_12M_robust0_h41a": {
+        "threshold": "4mJy",  # noise ~1mJy in channels off line peak.
+        "startmodel": "W43-MM3_B3_uid___A001_X1296_X12f_continuum_merged_12M_robust0_selfcal5_finaliter",
+        "deconvolver": "multiscale",
+        "scales": [0, 4, 8, 16, 32, 64],  # 3.6pix per sqrt(bmaj*bmean), pix= 0.11arcsec, max scale ~7arcsec
+        "gain": 0.08,
+    },
+    "W43-MM3_B6_12M_robust0": {
+        "threshold": "10mJy",
+        "startmodel": "W43-MM3_B6_uid___A001_X1296_X129_continuum_merged_12M_robust0_selfcal5_finaliter",
+        "imsize": [960, 960],
+    },
+    "W43-MM3_B6_12M_robust0_12co": {
+        "threshold": "6mJy",  # estimated noise: 2 mJy
+        "startmodel": "W43-MM3_B6_uid___A001_X1296_X129_continuum_merged_12M_robust0_selfcal5_finaliter",
+        "imsize": [960, 960],
+        "deconvolver": "multiscale",
+        "scales": [0, 4, 12, 24],
+    },
+    "W43-MM3_B6_12M_robust0_sio": {
+        "threshold": "8.4mJy",  # typical rms is 2.7-3.1 mJy, using 3sigma=9.3 for threshold (14 Dec. 2020)
+        "startmodel": "W43-MM3_B6_uid___A001_X1296_X129_continuum_merged_12M_robust0_selfcal5_finaliter",
+        "imsize": [960, 960],
+        "deconvolver": "multiscale",
+        "scales": [0, 4, 12],
+    },
+    "W51-E_B3_12M_robust0": {
+        "startmodel": "W51-E_B3_uid___A001_X1296_X10b_continuum_merged_12M_robust0_selfcal7_finaliter",
+        "threshold": "4mJy",  # sigma is ~0.8 mJy
+        "pblimit": 0.05,  # per Nov 6 telecon
+    },
+    "W51-E_B3_12M_robust0_h41a": {
+        "threshold": "4mJy",  # noise ~1mJy in channels off line peak.
+        "startmodel": "W51-E_B3_uid___A001_X1296_X10b_continuum_merged_12M_robust0_selfcal7_finaliter",
+        "deconvolver": "multiscale",
+        "scales": [0, 4, 8, 16, 32, 64],  # 3.8pix per sqrt(bmaj*bmean), pix= 0.08arcsec, max scale ~5arcsec
+        "gain": 0.08,
+    },
+    "W51-E_B6_12M_robust0": {
+        "pblimit": 0.1,
+        "threshold": "16mJy",  # sigma is ~ 4 mJy  (from sio cube, noise is 3.3-4.1 mJy)
+        "startmodel": "W51-E_B6_uid___A001_X1296_X213_continuum_merged_12M_robust0_selfcal7_finaliter",
+    },
+    "W51-E_B6_12M_robust0_sio": {
+        "threshold": "8.2mJy",  # typical rms is 3.3-4.1 mJy, using 3sigma for threshold (14 Dec. 2020)
+        "startmodel": "W51-E_B6_uid___A001_X1296_X213_continuum_merged_12M_robust0_selfcal7_finaliter",
+    },
+    "W51-E_B6_12M_robust0_spw1": {
+        "threshold": "12.3mJy",  # typical rms is 3.3-4.1 mJy, using 3sigma for threshold (14 Dec. 2020)
+        "startmodel": "W51-E_B6_uid___A001_X1296_X213_continuum_merged_12M_robust0_selfcal7_finaliter",
+    },
+    "W51-IRS2_B3_12M_robust0": {
+        "threshold": "6mJy",
+        "startmodel": "W51-IRS2_B3_uid___A001_X1296_X18f_continuum_merged_12M_robust0_selfcal4_finaliter",
+    },
+    "W51-IRS2_B3_12M_robust0_h41a": {
+        "threshold": "4mJy",  # noise ~1mJy in channels off line peak.
+        "startmodel": "W51-IRS2_B3_uid___A001_X1296_X18f_continuum_merged_12M_robust0_selfcal4_finaliter",
+        "deconvolver": "multiscale",
+        "scales": [0, 4, 8, 16, 32, 64],  # 3.8pix per sqrt(bmaj*bmean), pix= 0.08arcsec, max scale ~5arcsec
+        "gain": 0.08,
+    },
+    "W51-IRS2_B6_12M_robust0": {
+        "threshold": "9.6mJy",  # "6mJy", #estimated noise: 3.2 mJy, from sio-only cube
+        "startmodel": "W51-IRS2_B6_uid___A001_X1296_X187_continuum_merged_12M_robust0_selfcal9_finaliter",
+    },
+    "W51-IRS2_B6_12M_robust0_sio": {
+        "threshold": "6.4mJy",  # typical rms is 2.7-3.2 mJy, using 3sigma for threshold (14 Dec. 2020)
+        "startmodel": "W51-IRS2_B6_uid___A001_X1296_X187_continuum_merged_12M_robust0_selfcal9_finaliter",
+    },
+    "G008.67_B3_12M_robust0_n2hp": {
+        "scales": [0, 7, 14, 28, 42, 56, 70],
+        "startmodel": "G008.67_B3_uid___A001_X1296_X1c1_continuum_merged_12M_robust0_selfcal5_finaliter",
+    },
+    "G010.62_B3_12M_robust0_n2hp": {
+        "scales": [0, 4, 8, 16, 24, 32, 40, 48, 56, 64, 72],
+        "startmodel": "G010.62_B3_uid___A001_X1296_X1e5_continuum_merged_12M_robust0_selfcal9_finaliter",
+    },
+    "G012.80_B3_12M_robust0_n2hp": {
+        "scales": [0, 6, 12, 24],
+        "startmodel": "G012.80_B3_uid___A001_X1296_X1fb_continuum_merged_12M_robust0_selfcal7_finaliter",
+    },
+    "G327.29_B3_12M_robust0_n2hp": {
+        "scales": [0, 5, 10, 20, 30, 40, 50, 60, 70],
+        "startmodel": "G327.29_B3_uid___A001_X1296_X17d_continuum_merged_12M_robust0_selfcal2_finaliter",
+    },
+    "G328.25_B3_12M_robust0_n2hp": {
+        "scales": [0, 8, 16, 32, 48, 64],
+        "startmodel": "G328.25_B3_uid___A001_X1296_X16d_continuum_merged_12M_robust0_selfcal4_finaliter.model.tt0",
+    },
+    "G333.60_B3_12M_robust0_n2hp": {
+        "scales": [0, 7, 14, 28, 42, 56, 70],
+        "startmodel": "G333.60_B3_uid___A001_X1296_X1a3_continuum_merged_12M_robust0_selfcal6_finaliter",
+    },
+    "G337.92_B3_12M_robust0_n2hp": {
+        "scales": [0, 5, 10, 20, 30, 40, 50, 60, 70],
+        "startmodel": "G337.92_B3_uid___A001_X1296_X147_continuum_merged_12M_robust0_selfcal4_finaliter",
+    },
+    "G338.93_B3_12M_robust0_n2hp": {
+        "scales": [0, 5, 10, 20, 30, 40, 50, 60, 70],
+        "startmodel": "G338.93_B3_uid___A001_X1296_X159_continuum_merged_12M_robust0_selfcal3_finaliter",
+    },
+    "G351.77_B3_12M_robust0_n2hp": {
+        "scales": [0, 6, 12, 24],
+        "startmodel": "G351.77_B3_uid___A001_X1296_X209_continuum_merged_12M_robust0_selfcal4_finaliter",
+    },
+    "G353.41_B3_12M_robust0_n2hp": {
+        "scales": [0, 6, 12, 24],
+        "startmodel": "G353.41_B3_uid___A001_X1296_X1d5_continuum_merged_12M_robust0_selfcal6_finaliter",
+    },
+    "W43-MM1_B3_12M_robust0_n2hp": {
+        "scales": [0, 5, 10, 20, 30, 40, 50, 60, 70],
+        "startmodel": "W43-MM1_B3_uid___A001_X1296_X1af_continuum_merged_12M_robust0_selfcal4_finaliter",
+    },
+    "W43-MM2_B3_12M_robust0_n2hp": {
+        "scales": [0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
+        "startmodel": "W43-MM2_B3_uid___A001_X1296_X11b_continuum_merged_12M_robust0_selfcal4_finaliter",
+    },
+    "W43-MM3_B3_12M_robust0_n2hp": {
+        "scales": [0, 4, 8, 16, 24, 32, 40, 48, 56, 64, 72],
+        "startmodel": "W43-MM3_B3_uid___A001_X1296_X12f_continuum_merged_12M_robust0_selfcal5_finaliter",
+    },
+    "W51-E_B3_12M_robust0_n2hp": {
+        "scales": [0, 4, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104],
+        "startmodel": "W51-E_B3_uid___A001_X1296_X10b_continuum_merged_12M_robust0_selfcal7_finaliter",
+    },
+    "W51-IRS2_B3_12M_robust0_n2hp": {
+        "scales": [0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
+        "startmodel": "W51-IRS2_B3_uid___A001_X1296_X18f_continuum_merged_12M_robust0_selfcal4_finaliter",
+    },
+}
+
+
+default_lines = {
+    "h41a": "92.034434GHz",
+    "ch3cnv8=1": "92.26144GHz",
+    "ch3cn": "91.97GHz",  # range from 91.987 to 91.567
+    "13cs_2-1": "92.49430800GHz",
+    "n2hp": "93.173700GHz",
+    "ch3cch_62-52": "102.547983GHz",
+    "h2cs_322-221": "103.039927GHz",
+    "h2cs_312-211": "104.617040GHz",
+    "oc33s_18-17": "216.14735900GHz",
+    "sio": "217.104984GHz",
+    "h2co_303-202": "218.222195GHz",
+    "c18o": "219.560358GHz",
+    "so_6-5": "219.94944200GHz",
+    "12co": "230.538GHz",
+    "ocs_19-18": "231.06099340GHz",
+    "13cs_5-4": "231.22068520GHz",
+    "h30a": "231.900928GHz",
+}
+
+for key in line_imaging_parameters_custom:
+    if key in line_imaging_parameters:
+        line_imaging_parameters[key].update(line_imaging_parameters_custom[key])
+    else:
+        # loop over known lines _plus_ spws
+        for linename in tuple(default_lines.keys()) + tuple("spw" + str(ii) for ii in range(7)):
+            if linename in key:
+                key_noline = key.replace("_" + linename, "")
+                line_imaging_parameters[key] = copy.copy(line_imaging_parameters_default[key_noline])
+                line_imaging_parameters[key].update(line_imaging_parameters_custom[key])
+
+field_vlsr = {
+    "W51-E": "55km/s",
+    "W51-IRS2": "55km/s",
+    "G010.62": "-2km/s",
+    "G353.41": "-18km/s",
+    "W43-MM1": "97km/s",
+    "W43-MM2": "90km/s",
+    "W43-MM3": "97km/s",
+    "G337.92": "-40km/s",
+    "G338.93": "-62km/s",
+    "G328.25": "-43km/s",
+    "G327.29": "-45km/s",
+    "G333.60": "-47km/s",
+    "G008.67": "37.60km/s",
+    "G012.80": "37.00km/s",
+    "G351.77": "-3.00km/s",
+}
+# line parameters are converted by line_imaging.py into tclean parameters
+line_parameters_default = {
+    field: {
+        line: {"restfreq": freq, "vlsr": field_vlsr[field], "cubewidth": "50km/s"}
+        for line, freq in default_lines.items()
+    }
+    for field in allfields
+}
 for field in allfields:
-    line_parameters[field]['12co']['cubewidth'] = '150km/s'
+    line_parameters_default[field]["12co"]["cubewidth"] = "150km/s"
+    line_parameters_default[field]["ch3cnv8=1"]["cubewidth"] = "150km/s"  # is 150 wide enough?
+    line_parameters_default[field]["ch3cn"]["cubewidth"] = "150km/s"  # is 150 wide enough?
+line_parameters = copy.deepcopy(line_parameters_default)
 
-# use the continuum image as the startmodel for the non-contsub'd data
-# (nice idea, didn't work)
-#line_imaging_parameters['W51-E_B6_12M_robust0']['startmodel'] = 'imaging_results/W51-E_B6_uid___A001_X1296_X215_continuum_merged_12M_robust0_selfcal7.model.tt0'
-#line_imaging_parameters['W51-E_B3_12M_robust0']['startmodel'] = 'imaging_results/W51-E_B3_uid___A001_X1296_X10b_continuum_merged_12M_robust0_selfcal7.model.tt0'
+line_parameters_custom = {
+    "G008.67": {
+        "12co": {"cubewidth": "150km/s"},
+        "sio": {"cubewidth": "120km/s", "vlsr": "35km/s"},
+        "ch3cnv8=1": {"cubewidth": "150km/s"},
+        "h41a": {"cubewidth": "270km/s", "vlsr": "-22km/s"},  # 43 - 65 = -22km/s to accomodate He and C.
+        "h30a": {"cubewidth": "120km/s", "vlsr": "44km/s"},
+    },
+    "G010.62": {
+        "12co": {"cubewidth": "150km/s"},
+        "sio": {"cubewidth": "80km/s"},
+        "ch3cnv8=1": {"cubewidth": "150km/s"},
+        "h41a": {"cubewidth": "270km/s", "vlsr": "-66km/s"},  # -1 - 65 = -66km/s to accomodate He and C.
+        "h30a": {"cubewidth": "120km/s", "vlsr": "0km/s"},
+        "n2hp": {"cubewidth": "60km/s"},
+    },
+    "G012.80": {
+        "12co": {"cubewidth": "150km/s"},
+        "sio": {"cubewidth": "100km/s", "vlsr": "35.5km/s"},
+        "ch3cnv8=1": {"cubewidth": "150km/s"},
+        "h41a": {"cubewidth": "270km/s", "vlsr": "-29km/s"},  # 36 - 65 = -29km/s to accomodate He and C.
+        "h30a": {"cubewidth": "120km/s", "vlsr": "35km/s"},
+    },
+    "G327.29": {
+        "12co": {"cubewidth": "150km/s"},
+        "sio": {"cubewidth": "120km/s", "vlsr": "-43km/s"},
+        "ch3cnv8=1": {"cubewidth": "150km/s"},
+        "h41a": {"cubewidth": "270km/s", "vlsr": "-105km/s"},  # -40 - 65 = -105km/s to accomodate He and C.
+        "h30a": {"cubewidth": "120km/s", "vlsr": "-40km/s"},
+    },
+    "G328.25": {
+        "12co": {"cubewidth": "150km/s"},
+        "sio": {"cubewidth": "120km/s"},
+        "ch3cnv8=1": {"cubewidth": "150km/s"},
+        "h41a": {"cubewidth": "270km/s", "vlsr": "-108km/s"},  # -43 - 65 = -108km/s to accomodate He and C.
+        "h30a": {"cubewidth": "120km/s", "vlsr": "-43km/s"},
+    },
+    "G333.60": {
+        "12co": {"cubewidth": "150km/s"},
+        "sio": {
+            "cubewidth": "100km/s",
+            "vlsr": "-48km/s",
+        },  # unclear if cube needs to be widened as it diverges in a few places - 100 km/s width is based on cube widths for other sources (5 March 2021, apmtowner)
+        "ch3cnv8=1": {"cubewidth": "150km/s"},
+        "h41a": {"cubewidth": "270km/s", "vlsr": "-110km/s"},  # -45 - 65 = -110km/s to accomodate He and C.
+        "h30a": {"cubewidth": "120km/s", "vlsr": "-45km/s"},
+    },
+    "G337.92": {
+        "sio": {"cubewidth": "100km/s", "vlsr": "-39km/s"},
+        "12co": {"cubewidth": "150km/s"},
+        "ch3cnv8=1": {"cubewidth": "150km/s"},
+        "h41a": {"cubewidth": "270km/s", "vlsr": "-100km/s"},  # -35 - 65 = -100km/s to accomodate He and C.
+        "h30a": {"cubewidth": "120km/s", "vlsr": "-35km/s"},
+    },
+    "G338.93": {
+        "12co": {"cubewidth": "150km/s"},
+        "sio": {"cubewidth": "80km/s"},
+        "ch3cnv8=1": {"cubewidth": "150km/s"},
+        "h41a": {"cubewidth": "270km/s", "vlsr": "-127km/s"},  # -62 - 65 = -127km/s to accomodate He and C.
+        "h30a": {"cubewidth": "120km/s", "vlsr": "-62km/s"},
+        "sio": {"cubewidth": "120km/s"},
+    },
+    "G351.77": {
+        "12co": {"cubewidth": "150km/s"},
+        "sio": {"cubewidth": "100km/s"},
+        "ch3cnv8=1": {"cubewidth": "150km/s"},
+        "h41a": {"cubewidth": "270km/s", "vlsr": "-67km/s"},  # -2 - 65 = -67km/s to accomodate He and C.
+        "h30a": {"cubewidth": "120km/s", "vlsr": "-2km/s"},
+    },
+    "G353.41": {
+        "sio": {"cubewidth": "80km/s"},
+        "12co": {"cubewidth": "150km/s"},
+        "ch3cnv8=1": {"cubewidth": "150km/s"},
+        "h41a": {"cubewidth": "270km/s", "vlsr": "-81km/s"},  # -16 - 65 = -81km/s to accomodate He and C.
+        "h30a": {"cubewidth": "120km/s", "vlsr": "-16km/s"},
+        "n2hp": {"cubewidth": "32km/s"},
+    },
+    "W43-MM1": {
+        "12co": {"cubewidth": "150km/s"},
+        "ch3cnv8=1": {"cubewidth": "150km/s"},
+        "h41a": {"cubewidth": "270km/s", "vlsr": "35km/s"},  # 100 - 65 = 35km/s to accomodate He and C.
+        "h30a": {"cubewidth": "120km/s", "vlsr": "100km/s"},
+    },
+    "W43-MM2": {
+        "sio": {"cubewidth": "140km/s", "vlsr": "91km/s", "width": "0.37km/s"},
+        "12co": {"cubewidth": "240km/s", "vlsr": "91km/s"},
+        # "12co": {"cubewidth": "240km/s", "vlsr": "91km/s", "width": "2km/s"},
+        "ch3cnv8=1": {"cubewidth": "150km/s"},
+        "h41a": {"cubewidth": "270km/s", "vlsr": "35km/s"},  # 100 - 65 = 35km/s to accomodate He and C.
+        "h30a": {"cubewidth": "120km/s", "vlsr": "100km/s"},
+        "c18o": {"cubewidth": "80km/s"},
+    },
+    "W43-MM3": {
+        "sio": {"cubewidth": "120km/s", "vlsr": "93km/s", "width": "0.37km/s"},
+        "12co": {"cubewidth": "190km/s", "vlsr": "93km/s"},
+        # "12co": {"cubewidth": "190km/s", "vlsr": "93km/s", "width": "2km/s"},
+        "ch3cnv8=1": {"cubewidth": "150km/s"},
+        "h41a": {"cubewidth": "270km/s", "vlsr": "25km/s"},  # 90 - 65 = 25km/s to accomodate He and C.
+        "h30a": {"cubewidth": "120km/s", "vlsr": "90km/s"},
+    },
+    "W51-E": {
+        "12co": {"cubewidth": "150km/s"},
+        "sio": {"cubewidth": "120km/s"},
+        "ch3cnv8=1": {"cubewidth": "150km/s"},
+        "h41a": {"cubewidth": "270km/s", "vlsr": "-6km/s"},  # 59 - 65 = -6km/s to accomodate He and C.
+        "h30a": {"cubewidth": "120km/s", "vlsr": "59km/s"},
+        "n2hp": {"cubewidth": "60km/s"},
+    },
+    "W51-IRS2": {
+        "12co": {"cubewidth": "150km/s"},
+        "sio": {"cubewidth": "120km/s", "vlsr": "60km/s"},
+        "ch3cnv8=1": {"cubewidth": "150km/s"},
+        "h41a": {"cubewidth": "270km/s", "vlsr": "-9km/s"},  # 56 - 65 = -9km/s to accomodate He and C.
+        "h30a": {"cubewidth": "120km/s", "vlsr": "56km/s"},
+    },
+}
+
+for field in line_parameters_custom:
+    for line in line_parameters_custom[field]:
+        line_parameters[field][line].update(line_parameters_custom[field][line])

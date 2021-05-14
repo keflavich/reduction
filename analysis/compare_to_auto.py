@@ -12,7 +12,7 @@ from spectral_cube import SpectralCube
 
 from compare_images import make_comparison_image
 
-basepath = "/bio/web/secure/adamginsburg/ALMA-IMF/Feb2020/"
+basepath = "/orange/adamginsburg/web/secure/ALMA-IMF/Feb2021/"
 
 filelist = glob.glob(f"{basepath}/*/*/*/*.image.tt0.pbcor.fits")
 imresults = '/orange/adamginsburg/ALMA_IMF/2017.1.01355.L/imaging_results'
@@ -38,7 +38,14 @@ for fn in filelist:
     fh2 = fits.open(autoname)
 
     if (fh1[0].data.shape == fh2[0].data.shape):
-        make_comparison_image(fn, autoname, title1='Delivered', title2='Auto')
+        try:
+            make_comparison_image(fn, autoname, title1='Delivered', title2='Auto', allow_reproj=True)
+        except ValueError as ex:
+            if 'WCS' in str(ex):
+                print(str(ex))
+                continue
+            else:
+                raise ex
         pl.savefig(f"{basepath}/comparisons/auto_vs_not_{basename.replace('.fits','')}.png", bbox_inches='tight', dpi=200)
     else:
         print(f"Skipping {fn} because there was a shape mismatch.")
