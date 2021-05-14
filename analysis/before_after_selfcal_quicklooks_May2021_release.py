@@ -20,18 +20,18 @@ sys.path.append(f'{os.path.dirname(__file__)}/../reduction')
 import imaging_parameters
 
 cwd = os.getcwd()
-basepath = '/orange/adamginsburg/ALMA_IMF/2017.1.01355.L/February2021Release/'
+basepath = '/orange/adamginsburg/ALMA_IMF/2017.1.01355.L/May2021Release/'
 os.chdir(basepath)
-sharepath = '/orange/adamginsburg/web/secure/ALMA-IMF/February2021Release/'
+sharepath = '/orange/adamginsburg/web/secure/ALMA-IMF/May2021Release/'
 
 #import imstats
 
 
 # tbl = imstats.savestats(basepath=basepath)
 
-#tbl = Table.read('/orange/adamginsburg/web/secure/ALMA-IMF/February2021/tables/metadata.ecsv')
-tbl = Table.read('/orange/adamginsburg/ALMA_IMF/2017.1.01355.L/February2021Release/tables/metadata_image.tt0.ecsv')
-#tbl = Table.read('/orange/adamginsburg/web/secure/ALMA-IMF/February2021Release/tables/metadata.ecsv')
+#tbl = Table.read('/orange/adamginsburg/web/secure/ALMA-IMF/May2021/tables/metadata.ecsv')
+tbl = Table.read('/orange/adamginsburg/ALMA_IMF/2017.1.01355.L/May2021Release/tables/metadata_image.tt0.ecsv')
+#tbl = Table.read('/orange/adamginsburg/web/secure/ALMA-IMF/May2021Release/tables/metadata.ecsv')
 tbl.add_column(Column(name='casaversion_pre', data=['                 ']*len(tbl)))
 tbl.add_column(Column(name='casaversion_post', data=['                 ']*len(tbl)))
 tbl.add_column(Column(name='has_amp', data=[False]*len(tbl)))
@@ -189,41 +189,17 @@ if not os.path.exists(f'{sharepath}/tables/'):
 for bp in ('/orange/adamginsburg/web/secure/ALMA-IMF/',
            '/orange/adamginsburg/ALMA_IMF/2017.1.01355.L/'):
 
-    tbl.write('{bp}/February2021Release/tables/metadata_sc.ecsv'.format(bp=bp),
+    tbl.write('{bp}/May2021Release/tables/metadata_sc.ecsv'.format(bp=bp),
               overwrite=True)
-    tbl.write('{bp}/February2021Release/tables/metadata_sc.html'.format(bp=bp),
+    tbl.write('{bp}/May2021Release/tables/metadata_sc.html'.format(bp=bp),
               formats=formats,
               format='ascii.html', overwrite=True)
-    tbl.write('{bp}/February2021Release/tables/metadata_sc.tex'.format(bp=bp),
+    tbl.write('{bp}/May2021Release/tables/metadata_sc.tex'.format(bp=bp),
               formats=formats,
               overwrite=True)
-    tbl.write('{bp}/February2021Release/tables/metadata_sc.js.html'.format(bp=bp),
+    tbl.write('{bp}/May2021Release/tables/metadata_sc.js.html'.format(bp=bp),
               #formats=formats,
               format='jsviewer')
 
-
-
-
-
-bsens=""
-last_selfcal=9
-config='12M'
-band=3
-field='G010.62'
-preselfcal_name = f'{basepath}/{field}/B{band}/cleanest/G010.62_B3_uid___A001_X1296_X1e5_continuum_merged_12M_robust0_preselfcal_finalmodel.image.tt0'
-postselfcal_name = f'{basepath}/{field}/B{band}/cleanest/G010.62_B3_uid___A001_X1296_X1e5_continuum_merged_12M_robust0_selfcal9_finaliter.image.tt0'
-
-ax1, ax2, ax3, fig, diffstats = make_comparison_image(preselfcal_name,
-                                                      postselfcal_name,
-                                                      title1='Preselfcal',
-                                                      title2='Postselfcal',
-                                                      sigma_scale=5,
-                                                      writediff=True)
-fig.savefig(f"{basepath}/{field}/B{band}/comparisons/{field}_B{band}_{config}{bsens}_selfcal{last_selfcal}_comparison.png", bbox_inches='tight')
-shutil.copy(f"{basepath}/{field}/B{band}/comparisons/{field}_B{band}_{config}{bsens}_selfcal{last_selfcal}_comparison.png",
-            f"{sharepath}/comparison_images/")
-
-
-
-
 os.chdir(cwd)
+

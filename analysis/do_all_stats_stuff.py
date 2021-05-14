@@ -13,13 +13,14 @@ assert 'SCRIPT_DIR' in os.environ
 script_dir = Path(os.environ['SCRIPT_DIR'])
 
 scripts = [
-           'make_feb2021release.py',
+           'make_may2021release.py',
            #'make_oct2020release.py',
            # don't do this any more 'link_files.py',
            'link_files_restructured.py',
            'delivery_status.py',
            'imstats.py',
-           'before_after_selfcal_quicklooks_Feb2021release.py',
+           #'before_after_selfcal_quicklooks_Feb2021release.py',
+           'before_after_selfcal_quicklooks_May2021release.py',
            'bsens_comparison.py',
            'bsens_cleanest_diff_zooms.py',
            'psf_check_figures.py',
@@ -30,11 +31,12 @@ scripts = [
            'selfcal_field_data.py',
            'cube_metadata_grid.py',
            'cube_spectral_quicklooks.py',
-           'diagnostic_images.py',
+           # this is a library, not a script: 'diagnostic_images.py',
            'diagnostic_spectra.py',
            'plot_uvspectra.py',
            'fullcube_quicklooks.py',
            '7m12m_comparison.py',
+           'cube_stats_grid.py',
           ]
 
 for scriptname in scripts:

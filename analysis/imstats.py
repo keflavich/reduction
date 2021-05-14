@@ -333,7 +333,7 @@ def assemble_stats(globstr, ditch_suffix=None):
     allstats = []
 
     for fn in ProgressBar(glob.glob(globstr)):
-        if fn.endswith('diff.fits'):
+        if fn.endswith('diff.fits') or fn.endswith('bsens-cleanest.fits'):
             continue
         if fn.count('.fits') > 1:
             # these are diff images, or something like that
@@ -548,7 +548,7 @@ def make_analysis_forms(basepath="/orange/adamginsburg/web/secure/ALMA-IMF/Octob
 
         image = fn
         basename,suffix = image.split(".image.tt0")
-        if 'diff' in suffix:
+        if 'diff' in suffix or 'bsens-cleanest' in suffix:
             continue
         outname = basename.split("/")[-1]
 
@@ -785,6 +785,8 @@ if __name__ == "__main__":
     if 'ufhpc' in socket.gethostname():
         for basepath,formid in (
                 #("/orange/adamginsburg/web/secure/ALMA-IMF/October2020Release/",
+                ("/orange/adamginsburg/ALMA_IMF/2017.1.01355.L/May2021Release/",
+                 "1FAIpQLSc3QnQWNDl97B8XeTFRNMWRqU5rlxNPqIC2i1jMr5nAjcHDug"),
                 ("/orange/adamginsburg/ALMA_IMF/2017.1.01355.L/February2021Release/",
                  "1FAIpQLSc3QnQWNDl97B8XeTFRNMWRqU5rlxNPqIC2i1jMr5nAjcHDug"),
                 ("/orange/adamginsburg/ALMA_IMF/2017.1.01355.L/RestructuredImagingResults/",
@@ -804,5 +806,5 @@ if __name__ == "__main__":
             modtbl = savestats(basepath=basepath, suffix='model.tt0', filetype="")
             tbl = savestats(basepath=basepath)
             base_form_url=f"https://docs.google.com/forms/d/e/{formid}/viewform?embedded=true"
-            flist = make_analysis_forms(basepath=basepath, base_form_url=base_form_url, dontskip_noresid='February2021' in basepath)
+            flist = make_analysis_forms(basepath=basepath, base_form_url=base_form_url, dontskip_noresid='May2021' in basepath)
     os.chdir(cwd)
