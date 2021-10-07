@@ -59,7 +59,7 @@ export DASK_THREADS=$SLURM_NTASKS
 
 env
 
-${IPYTHON} ${SCRIPT_DIR}/cubestats_mwe_simple_multicube.py &
+${IPYTHON} ${SCRIPT_DIR}/cubestats_mwe_multicube.py &
 PID=$!
 /orange/adamginsburg/miniconda3/bin/python ${ALMAIMF_ROOTDIR}/reduction/slurm_scripts/monitor_memory.py ${PID}
 

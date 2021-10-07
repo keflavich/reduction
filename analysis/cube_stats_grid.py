@@ -154,11 +154,26 @@ if __name__ == "__main__":
     def save_tbl(rows, colnames):
         columns = list(map(try_qty, zip(*rows)))
         tbl = Table(columns, names=colnames)
-        tbl.write(tbldir / 'cube_stats.ecsv', overwrite=True)
-        tbl.write(tbldir / 'cube_stats.ipac', format='ascii.ipac', overwrite=True)
-        tbl.write(tbldir / 'cube_stats.html', format='ascii.html', overwrite=True)
-        tbl.write(tbldir / 'cube_stats.tex', overwrite=True)
-        tbl.write(tbldir / 'cube_stats.js.html', format='jsviewer')
+        try:
+            tbl.write(tbldir / 'cube_stats.ecsv', overwrite=True)
+        except Exception as ex:
+            print(ex)
+        try:
+            tbl.write(tbldir / 'cube_stats.ipac', format='ascii.ipac', overwrite=True)
+        except Exception as ex:
+            print(ex)
+        try:
+            tbl.write(tbldir / 'cube_stats.html', format='ascii.html', overwrite=True)
+        except Exception as ex:
+            print(ex)
+        try:
+            tbl.write(tbldir / 'cube_stats.tex', overwrite=True)
+        except Exception as ex:
+            print(ex)
+        try:
+            tbl.write(tbldir / 'cube_stats.js.html', format='jsviewer')
+        except Exception as ex:
+            print(ex)
         return tbl
 
     start_from_cached = True # TODO: make a parameter
@@ -170,8 +185,6 @@ if __name__ == "__main__":
     else:
         rows = []
 
-
-    cache_stats_file = open(tbldir / "cube_stats.txt", 'w')
 
 
     for field in "G010.62 W51-IRS2 G012.80 G333.60 W43-MM2 G327.29 G338.93 W51-E G353.41 G008.67 G337.92 W43-MM3 G328.25 G351.77 W43-MM1".split():
@@ -232,11 +245,11 @@ if __name__ == "__main__":
                                         for x in hist if '=' in x})
                         #ia.close()
 
-                        if os.path.exists(fn+".fits"):
-                            cube = SpectralCube.read(fn+".fits", format='fits', use_dask=True)
+                        if os.path.exists(fn):
+                            cube = SpectralCube.read(fn, format='casa_image', target_chunksize=target_chunksize)
                             cube.use_dask_scheduler(scheduler=scheduler, num_workers=num_workers)
                         else:
-                            cube = SpectralCube.read(fn, format='casa_image', target_chunksize=target_chunksize)
+                            cube = SpectralCube.read(fn+".fits", format='fits', use_dask=True)
                             cube.use_dask_scheduler(scheduler=scheduler, num_workers=num_workers)
                             # print(f"Rechunking {cube} to tmp dir", flush=True)
                             # cube = cube.rechunk(save_to_tmp_dir=True)
@@ -283,11 +296,11 @@ if __name__ == "__main__":
                         del cube
                         del stats
 
-                        if os.path.exists(modfn+".fits"):
-                            modcube = SpectralCube.read(modfn+".fits", format='fits', use_dask=True)
+                        if os.path.exists(modfn):
+                            modcube = SpectralCube.read(modfn, format='casa_image', target_chunksize=target_chunksize)
                             modcube.use_dask_scheduler(scheduler=scheduler, num_workers=num_workers)
                         else:
-                            modcube = SpectralCube.read(modfn, format='casa_image', target_chunksize=target_chunksize)
+                            modcube = SpectralCube.read(modfn+".fits", format='fits', use_dask=True)
                             modcube.use_dask_scheduler(scheduler=scheduler, num_workers=num_workers)
                             # print(f"Rechunking {modcube} to tmp dir", flush=True)
                             # modcube = modcube.rechunk(save_to_tmp_dir=True)
@@ -311,11 +324,7 @@ if __name__ == "__main__":
                             [modmin, modmax, modstd, modsum, modmean])
                         rows.append(row)
 
-                        cache_stats_file.write(" ".join(map(str, row)) + "\n")
-                        cache_stats_file.flush()
                         tbl = save_tbl(rows, colnames)
-
-    cache_stats_file.close()
 
 
     print(tbl)

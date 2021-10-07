@@ -1,11 +1,11 @@
 from spectral_cube import SpectralCube
 import time
 
-flist = ['/orange/adamginsburg/ALMA_IMF/2017.1.01355.L/imaging_results/W43-MM1_B3_spw2_12M_spw2.image',
-         '/orange/adamginsburg/ALMA_IMF/2017.1.01355.L/imaging_results/W43-MM2_B3_spw2_12M_spw2.image',
-         '/orange/adamginsburg/ALMA_IMF/2017.1.01355.L/imaging_results/W43-MM3_B3_spw2_12M_spw2.image',
-         '/orange/adamginsburg/ALMA_IMF/2017.1.01355.L/imaging_results/G010.62_B3_spw2_12M_spw2.image',
-         '/orange/adamginsburg/ALMA_IMF/2017.1.01355.L/imaging_results/G333.60_B3_spw2_12M_spw2.image',
+flist = ['/orange/adamginsburg/ALMA_IMF/2017.1.01355.L/imaging_results/W43-MM1_B3_spw2_12M_spw2.image.fits',
+         '/orange/adamginsburg/ALMA_IMF/2017.1.01355.L/imaging_results/W43-MM2_B3_spw2_12M_spw2.image.fits',
+         '/orange/adamginsburg/ALMA_IMF/2017.1.01355.L/imaging_results/W43-MM3_B3_spw2_12M_spw2.image.fits',
+         '/orange/adamginsburg/ALMA_IMF/2017.1.01355.L/imaging_results/G010.62_B3_spw2_12M_spw2.image.fits',
+         '/orange/adamginsburg/ALMA_IMF/2017.1.01355.L/imaging_results/G333.60_B3_spw2_12M_spw2.image.fits',
          ]
 print("flist=",flush=True)
 print(flist,flush=True)
@@ -15,8 +15,10 @@ for target_chunksize in (1e7,1e8,1e6):
         for fn in flist:
             t0 = time.time()
             print(scheduler, num_workers, target_chunksize, fn, flush=True)
-            cube = SpectralCube.read(fn, format='casa_image', target_chunksize=target_chunksize)
+            cube = SpectralCube.read(fn, target_chunksize=target_chunksize, use_dask=True)
+            print(cube, cube._data, flush=True)
             cube.use_dask_scheduler(scheduler=scheduler, num_workers=num_workers)
+            print(cube, cube._data, flush=True)
             stats = cube.statistics()
             print(f"success in {time.time()-t0}s", flush=True)
 #
@@ -50,7 +52,7 @@ for target_chunksize in (1e7,1e8,1e6):
 #
 #        t0 = time.time()
 #        print(scheduler, num_workers, target_chunksize)
-#        cube = SpectralCube.read(fn, format='casa_image', target_chunksize=target_chunksize)
+#        cube = SpectralCube.read(fn, format='casa_image', target_chunksize=target_chunksize, use_dask=True)
 #        cube.use_dask_scheduler(scheduler=scheduler)
 #        stats = cube.statistics()
 #        print(f"success in {time.time()-t0}s")

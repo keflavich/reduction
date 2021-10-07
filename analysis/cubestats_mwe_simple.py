@@ -1,16 +1,23 @@
 from spectral_cube import SpectralCube
 import time
 
-fn = '/orange/adamginsburg/ALMA_IMF/2017.1.01355.L/imaging_results/W43-MM1_B3_spw2_12M_spw2.image'
+import spectral_cube, astropy
+print(f"spectral_cube version = {spectral_cube.__version__}")
+print(f"astropy version = {astropy.__version__}")
 
-for target_chunksize in (1e7,1e8,1e6):
+fn = '/orange/adamginsburg/ALMA_IMF/2017.1.01355.L/imaging_results/W43-MM1_B3_spw2_12M_spw2.image.fits'
+
+t00 = time.time()
+for target_chunksize in (1e7,):
     for scheduler, num_workers in (('synchronous', 1), ('threads', 8)):
         t0 = time.time()
         print(scheduler, num_workers, target_chunksize, flush=True)
-        cube = SpectralCube.read(fn, format='casa_image', target_chunksize=target_chunksize)
+        cube = SpectralCube.read(fn, target_chunksize=target_chunksize, use_dask=True)
+        print(cube, cube._data, flush=True)
         cube.use_dask_scheduler(scheduler=scheduler, num_workers=num_workers)
+        print(cube, cube._data, flush=True)
         stats = cube.statistics()
-        print(f"success in {time.time()-t0}s", flush=True)
+        print(f"success in {time.time()-t0}s ({time.time() - t00}s since start)", flush=True)
 
 if __name__ == "__main__":
 
@@ -42,7 +49,9 @@ if __name__ == "__main__":
 
         t0 = time.time()
         print(scheduler, num_workers, target_chunksize)
-        cube = SpectralCube.read(fn, format='casa_image', target_chunksize=target_chunksize)
+        cube = SpectralCube.read(fn, target_chunksize=target_chunksize, use_dask=True)
+        print(cube, cube._data, flush=True)
         cube.use_dask_scheduler(scheduler=scheduler)
+        print(cube, cube._data, flush=True)
         stats = cube.statistics()
         print(f"success in {time.time()-t0}s")
