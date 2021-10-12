@@ -11,6 +11,7 @@ t00 = time.time()
 for target_chunksize in (1e7,):
     for scheduler, num_workers in (('synchronous', 1), ('threads', 8)):
         t0 = time.time()
+
         print(scheduler, num_workers, target_chunksize, flush=True)
         cube = SpectralCube.read(fn, target_chunksize=target_chunksize, use_dask=True)
         print(cube, cube._data, flush=True)
