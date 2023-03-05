@@ -1,0 +1,62 @@
+"""
+cd /orange/adamginsburg/web/secure/ALMA-IMF/June2021FlatRelease/
+# only copy FITS files
+cp -nv ../June2021Release/*/B*/{cleanest,bsens,bsens_nobright}/*robust0_selfcal[0-9]_finaliter*tt{0,1}.{pbcor.,}fits .
+"""
+import glob
+import os
+import shutil
+
+from pathlib import Path
+
+cwd = os.getcwd()
+basepath = Path('/orange/adamginsburg/ALMA_IMF/2017.1.01355.L/imaging_results/')
+releasepath = Path('/orange/adamginsburg/ALMA_IMF/2017.1.01355.L/June2021Release/')
+flatreleasepath = Path('/orange/adamginsburg/ALMA_IMF/2017.1.01355.L/June2021FlatRelease/')
+os.chdir(basepath)
+
+# configurable, kinda
+overwrite = False
+
+for field in "G008.67 G337.92 W43-MM3 G328.25 G351.77 G012.80 G327.29 W43-MM1 G010.62 W51-IRS2 W43-MM2 G333.60 G338.93 W51-E G353.41".split():
+    for band in ('B3','B6'):
+        for imtype,itgl in zip(('cleanest', 'bsens', 'bsens_nobright', 'bsens_nobright'),
+                               ('continuum_merged_12M', 'bsens_12M', 'bsens_12M_noco', 'bsens_12M_non2hp')):
+            itpath = releasepath / field / band / imtype
+            itpath.mkdir(parents=True, exist_ok=True)
+
+            for suffix in ('image.tt0.fits', 'image.tt0.pbcor.fits',
+                           "image.tt0", "model.tt0", "image.tt1", "model.tt1", "psf.tt0",
+                           "psf.tt1", "residual.tt0", "residual.tt1", "mask"):
+
+                for robust in (-2,-1,-0.5,0,0.5,1,2):
+
+                    for globstr in (f"{field}*_{band}_*{itgl}_robust{robust}_*selfcal[0-9]*finaliter.{suffix}",
+                                    f"{field}*_{band}_*{itgl}_robust{robust}_*preselfcal.{suffix}",
+                                    f"{field}*_{band}_*{itgl}_robust{robust}_*preselfcal_finalmodel.{suffix}",
+                                    f"{field}_{band}_*_robust{robust}_12M_mask.{suffix}", # use suffix here to avoid re-copying
+                                   ):
+
+                        files = glob.glob(str(basepath / globstr))
+                        for fn in files:
+                            basefn = os.path.basename(fn)
+                            try:
+                                if os.path.exists(itpath / basefn) and not overwrite:
+                                    print(f"Found {itpath / basefn}, skipping")
+                                    pass
+                                else:
+                                    shutil.copy(fn, itpath)
+                                    print(f"{fn} -> {itpath}")
+                            except IsADirectoryError:
+                                target = itpath / basefn
+
+                                # EITHER: Rewrite or Continue
+                                if os.path.isdir(target):
+                                    if overwrite:
+                                        print(f"Found {target}, overwriting")
+                                        shutil.rmtree(target)
+                                    else:
+                                        print(f"Found {target}, skipping")
+                                        continue
+                                print(f"{fn} -> {target}")
+                                shutil.copytree(fn, target)

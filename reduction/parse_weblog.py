@@ -13,15 +13,16 @@ flux_scales = {'Jy': 1,
                'µJy': 1e-6,
               }
 
-def get_mous_to_sb_mapping(project_code, QA2_required=True):
+def get_mous_to_sb_mapping(project_code):
 
     tbl = Alma.query(payload={'project_code': project_code}, cache=False,
-                     public=False)['Member ous id','SB name', 'QA2 Status']
-    if QA2_required:
-        mapping = {row['Member ous id']: row['SB name'] for row in tbl if
-                   row['QA2 Status'] == 'Y'}
-    else:
-        mapping = {row['Member ous id']: row['SB name'] for row in tbl}
+                     )['member_ous_uid','schedblock_name', 'qa2_passed']
+    mapping = {row['member_ous_uid']: row['schedblock_name'] for row in tbl if row['qa2_passed'] == 'T'}
+    
+    tbl = Alma.query(payload={'project_code': project_code}, cache=False,
+                     public=False)['member_ous_uid','schedblock_name', 'qa2_passed']
+    mapping.update({row['member_ous_uid']: row['schedblock_name'] for row in tbl if row['qa2_passed'] == 'T'})
+
     return mapping
 
 def get_human_readable_name(weblog, mapping=None):
@@ -101,12 +102,12 @@ def get_human_readable_name(weblog, mapping=None):
                             if 'uid' in td.text:
                                 uid = td.text
 
-                sbname = mapping[uid]
-#                try:
-#                    sbname = mapping[uid]
-#                except:
-#                    sbname = 'fail'
-#                    print('fail = {0}'.format(directory))
+#                sbname = mapping[uid]
+                try:
+                    sbname = mapping[uid]
+                except:
+                    sbname = 'fail'
+                    print('fail = {0}'.format(directory))
 
     return sbname, max_baseline
 
@@ -214,7 +215,7 @@ def get_all_fluxes(weblog_list, mapping=None):
 
 def fluxes_to_table(flux_dict):
 
-    sbname = Column(name='SB name', data=[name for name,item in flux_dict.items() for row in item])
+    sbname = Column(name='schedblock_name', data=[name for name,item in flux_dict.items() for row in item])
     uid = Column(name='UID', data=[data['ms'] for name,item in flux_dict.items() for num,data in item.items()])
     calname = Column(name='Calibrator', data=[data['calibrator'] for name,item in flux_dict.items() for num,data in item.items()])
     spw = Column(name='SPW', data=[data['spw'] for name,item in flux_dict.items() for num,data in item.items()])
@@ -239,7 +240,10 @@ def weblog_names(list_of_weblogs, mapping):
             if hrns.count(nm) > 1:
                 print("Fixing {0}".format(nm))
                 dupes = [ii for ii,x in enumerate(hrns) if x==nm]
-                assert len(dupes) == 2
+                if len(dupes) != 2:
+                    print(f"Found too many or too few: {dupes}")
+                    continue
+                #assert len(dupes) == 2
                 bl1 = data[dupes[0]][0][1]
                 bl2 = data[dupes[1]][0][1]
                 if bl1 < bl2:

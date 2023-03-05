@@ -17,6 +17,8 @@ import glob
 from spectral_cube import SpectralCube,DaskSpectralCube
 from spectral_cube.lower_dimensional_structures import Projection
 
+from show_pv_quicklook import show_pv
+
 if os.getenv('NO_PROGRESSBAR') is None:
     from dask.diagnostics import ProgressBar
     pbar = ProgressBar()
@@ -49,12 +51,16 @@ default_lines = {'n2hp': '93.173700GHz',
 
 suffix = '.image'
 
-os.environ['TEMPDIR'] = '/blue/adamginsburg/adamginsburg/tmp/'
+#os.environ['TEMPDIR'] = '/blue/adamginsburg/adamginsburg/tmp/'
 
 cwd = os.getcwd()
 basepath = '/orange/adamginsburg/ALMA_IMF/2017.1.01355.L/imaging_results'
 os.chdir(basepath)
 print(f"Changed from {cwd} to {basepath}, now running line_quicklooks")
+
+# allow %run -i w/overwrite=True to force overwriting
+if 'overwrite' not in locals():
+    overwrite = bool(os.getenv('OVERWRITE'))
 
 global then
 then = time.time()
@@ -64,11 +70,13 @@ def dt():
     print(f"Elapsed: {now-then}")
     then = now
 
+width = 10*u.km/u.s
+
 for field in "G328.25 G351.77 W51-IRS2 W43-MM2 G327.29 G338.93 W51-E G353.41 G008.67 G337.92 W43-MM3 W43-MM1 G010.62 G012.80 G333.60".split():
     for band in (3,6):
         for config in ('12M',): #'7M12M',
             for line in default_lines:
-                for suffix in (".image", ".contsub.image"):
+                for suffix in (".image", ".contsub.image", '.JvM.image'):
                     globblob = f"{field}_B{band}*_{config}_*{line}{suffix}"
                     fn = glob.glob(globblob)
                     if any(fn):
@@ -78,7 +86,7 @@ for field in "G328.25 G351.77 W51-IRS2 W43-MM2 G327.29 G338.93 W51-E G353.41 G00
                         print(f"Found no matches for glob {globblob}")
                         continue
 
-                    if os.path.exists('collapse/min/{0}'.format(fn.replace(suffix,"_min_K.fits"))):
+                    if os.path.exists('collapse/min/{0}'.format(fn.replace(suffix,"_min_K.fits"))) and not overwrite:
                         print(f"Found completed quicklooks for {fn}, skipping.")
                         continue
 
@@ -233,6 +241,30 @@ for field in "G328.25 G351.77 W51-IRS2 W43-MM2 G327.29 G338.93 W51-E G353.41 G00
                                overwrite=True)
                     mn_K.quicklook('collapse/min/pngs/{0}'.format(fn.replace(suffix,"_min_K.png")))
 
+                    restvel = np.nanmedian(mom1)
+
+                    print(f"PV mapping {line} at {rest_value} with velocity {restvel}")
+                    outpv = 'collapse/pvs/'+ fn.replace(suffix, f'{line}.pv_ra.fits')
+                    if (not os.path.exists(outpv)):
+
+                        vcube = mcube.with_spectral_unit(u.km/u.s, velocity_convention='radio', rest_value=rest_value)
+                        cutout = vcube.spectral_slab(restvel-50*u.km/u.s, restvel+50*u.km/u.s)
+                        assert cutout.shape[0] > 1
+                        pvra = cutout.mean(axis=1)
+                        assert not np.all(pvra[np.isfinite(pvra)] == 0)
+                        pvra.write(outpv, overwrite=True)
+                        fig,ax,cb = show_pv(pvra.hdu)
+                        fig.savefig(outpv.replace(".fits",".png"), bbox_inches='tight')
+                    outpv = 'collapse/pvs/'+ fn.replace(suffix, f'{line}.pv_dec.fits')
+                    if (not os.path.exists(outpv)):
+                        vcube = mcube.with_spectral_unit(u.km/u.s, velocity_convention='radio', rest_value=rest_value)
+                        cutout = vcube.spectral_slab(restvel-50*u.km/u.s, restvel+50*u.km/u.s)
+                        assert cutout.shape[0] > 1
+                        pvdec = cutout.mean(axis=2)
+                        assert not np.all(pvdec[np.isfinite(pvdec)] == 0)
+                        pvdec.write(outpv, overwrite=True)
+                        fig,ax,cb = show_pv(pvdec.hdu)
+                        fig.savefig(outpv.replace(".fits",".png"), bbox_inches='tight')
 
 
                     for pct in (25,50,75):
@@ -253,3 +285,6 @@ for field in "G328.25 G351.77 W51-IRS2 W43-MM2 G327.29 G338.93 W51-E G353.41 G00
 Files that have resulted in m/s parsing failures:
     ['G012.80_B3_spw0_7M12M_n2hp.contsub.image']
 """
+
+# for fn in /orange/adamginsburg/ALMA_IMF/2017.1.01355.L/imaging_results/collapse/*/pngs; do out=${fn//*collapse\// }; out=${out/\//_}; outdir="/orange/adamginsburg/web/secure/ALMA-IMF/cube_quicklooks/${out/ /}"; cp -v ${fn}/* ${outdir}; done
+# for fn in /orange/adamginsburg/ALMA_IMF/2017.1.01355.L/imaging_results/collapse/*/pngs; do out=${fn//*collapse\// }; out=${out/\//_}; echo $out; mkdir /orange/adamginsburg/web/secure/ALMA-IMF/cube_quicklooks/${out}; cp -v ${fn}/* /orange/adamginsburg/web/secure/ALMA-IMF/cube_quicklooks/${out}/; done

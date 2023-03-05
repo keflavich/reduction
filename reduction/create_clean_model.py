@@ -1,8 +1,15 @@
 # Script to create a startmodel for cube cleaning based on the continuum clean components
 # Last modified 04.08.2020
 
-from tasks import imregrid
-from taskinit import iatool
+try:
+    from tasks import imregrid
+    from taskinit import iatool
+except (ImportError,ModuleNotFoundError):
+    # futureproofing: CASA 6 imports this way
+    from casatasks import imregrid
+    from casatools import image
+    iatool = image
+
 import shutil
 import os
 
@@ -15,7 +22,7 @@ ia = iatool()
 # 2) robust0 cleanest model .tt0 and .tt1 are used to construct continuum_cube.model. A next level of complexity would be to use the robust 1 or
 # robust -1 continuum images depending on the robust param of the line tclean command.
 
-def create_clean_model(cubeimagename, contimagename, imaging_results_path, contmodel_path=None,):
+def create_clean_model(cubeimagename, contimagename, imaging_results_path, contmodel_path=None, cubeinsuffix='image'):
     #results_path = "./imaging_results/"  # imaging_results frmo the pipeline
     #contmodel_path = "./imaging_results_test_casatools/"  #Path with input and temporary continuum models
     if contmodel_path is None:
@@ -32,9 +39,10 @@ def create_clean_model(cubeimagename, contimagename, imaging_results_path, contm
 
     # image has to exist, model should not exist!
     # (if you ran tclean with niter=0, no model is created)
-    cubeinimagepath = ("{results_path}/{cubeimagename}.image"
+    cubeinimagepath = ("{results_path}/{cubeimagename}.{cubeinsuffix}"
                        .format(results_path=imaging_results_path,
-                               cubeimagename=cubeimagename))
+                               cubeimagename=cubeimagename,
+                               cubeinsuffix=cubeinsuffix))
     cubeoutmodelpath = ("{results_path}/{cubeimagename}.contcube.model"
                         .format(results_path=imaging_results_path,
                                 cubeimagename=cubeimagename))
@@ -82,13 +90,13 @@ def create_clean_model(cubeimagename, contimagename, imaging_results_path, contm
     # dnu_plane: dnu with respect to cube reference freq.
     # dnu: dnu with respect to tt0 continuum reference
     for plane in range(dict_line['shap'][-1]):
-        logprint('Calculating continuum model for plane {}'.format(plane))
+        #logprint('Calculating continuum model for plane {}'.format(plane))
         dnu_plane = (plane - dict_line['csys']['spectral2']['wcs']['crpix'])*dict_line['csys']['spectral2']['wcs']['cdelt']
         nu_plane = dict_line['csys']['spectral2']['wcs']['crval'] + dnu_plane
         #print(dnu_plane, nu_plane)
         factor = (nu_plane - temp_dict_cont_tt0['csys']['spectral2']['wcs']['crval'])/temp_dict_cont_tt0['csys']['spectral2']['wcs']['crval']
         #print(factor)
-        plane_pixvalues = tt0_pixvalues + factor*tt1_pixvalues
+        plane_pixvalues = (tt0_pixvalues + factor*tt1_pixvalues)
         blc = [0, 0, 0, plane]
         #trc = [line_im.shape()[0]-1, line_im.shape()[1]-1, 0, plane]
         line_im.putchunk(plane_pixvalues, blc=blc, replicate=False)

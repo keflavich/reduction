@@ -3,7 +3,13 @@ Line imaging script.  There needs to be a to_image.json file in the directory
 this is run in.  The to_image.json file is produced by the split_windows.py
 script.
 
-You can set the following environmental variables for this script:
+If you want to modify any of the environmental variables from _within_ python,
+you must set them!  This can be done with, e.g.,
+
+import os
+os.environ['CHANCHUNKS'] = -1
+
+These are the environmental variables you can set for this script:
     CHANCHUNKS=<number>
         The chanchunks parameter for tclean.  Depending on the version, it may
         be acceptable to specify this as -1, or it has to be positive.  From inline
@@ -17,10 +23,42 @@ For now, please pick chanchunks so that nchan/chanchunks is an integer.
         fields with this name (e.g., "W43-MM1", "W51-E", etc.)
     BAND_NUMBERS=<band(s)>
         Image this/these bands.  Can be "3", "6", or "3,6" (no quotes)
+        (you can specify this within python using "band_list=[3,6]" or "band_list=[3]")
     LINE_NAME=<name>
-        Image only one line at each run.  Can be 'n2hp', 'CO' (Case insensitive)
+        Image only one line at each run.  Can be 'n2hp', 'CO', or other
+        specified lines.   Can also a be a spw number (e.g., 'spw1'). (Case insensitive)
     LOGFILENAME=<name>
         Optional.  If specified, the logger will use this filenmae
+    DO_CONTSUB=True / blank
+        If specified, will continuum-subtract the measurement sets before
+        imaging them.  A file metadata.json containing the paths to the
+        cont.dat files is required in this case.
+        metadata[band][field]['cont.dat'] = ['/path/to/cont.dat']
+    WORK_DIRECTORY
+        If the variable WORK_DIRECTORY is specified, the final measurement set
+        after any concatenation/splitting will be copied to that directory,
+        and all output files will be created in that directory.  If this is
+        specified, then PRODUCT_DIRECTORY must also be specified - that's where
+        the final image set will be moved to at the end.
+        The MSes will be cleaned up (deleted) after imaging.
+        This keyword is intended to help support work on computer systems
+        where the storage and high-performance computing are on different
+        machines.
+    PRODUCT_DIRECTORY
+        See WORK_DIRECTORY.  This is where the final products will be put.
+    CONTINUE_IF_MS_EXISTS
+        A boolean flag that only applies if both PRODUCT_DIRECTORY and
+        WORK_DIRECTORY are set.  If this is not set, and the .ms file to
+        clean from exists in WORK_DIRECTORY, an error will be raised and
+        the script will fail.  If this is set, it will use that file.
+    USE_EXISTING_PSF
+        A boolean flag that will continue imaging even if a PSF already exists.
+        This can be used to resume a partially-completed run, but it's not clear
+        if it's ever safe to use.
+    TEMP_WORKDIR
+        A directory to do operations in when running the code; this will allow
+        storage of temporary files.  This will be set automatically if not
+        specified.
 """
 
 import json
@@ -30,43 +68,75 @@ import shutil
 import numpy as np
 import astropy.units as u
 from astropy import constants
+from spectral_cube import SpectralCube
+import re
 try:
-    from tasks import tclean, uvcontsub, impbcor, concat
+    from tasks import tclean, uvcontsub, impbcor, concat, flagdata, makemask, immath
     from taskinit import casalog
     from exportfits_cli import exportfits_cli as exportfits
-except ImportError:
+    from casa_system_defaults import casa
+    from taskinit import msmdtool, iatool, mstool
+    version = map(int, re.split("[-.]", casa['version']))
+except (ImportError,ModuleNotFoundError):
     # futureproofing: CASA 6 imports this way
-    from casatasks import tclean, uvcontsub, impbcor, concat, exportfits
+    from casatasks import tclean, uvcontsub, impbcor, concat, exportfits, flagdata, makemask, immath
     from casatasks import casalog
+    import casatools
+    version = casatools.version()
+    from casatools import msmetadata, image, ms as mstool
+    msmdtool = msmetadata
+    iatool = image
+versionstring = ".".join(map(str, version))
 from parse_contdotdat import parse_contdotdat, freq_selection_overlap, contchannels_to_linechannels
-from metadata_tools import determine_imsize, determine_phasecenter, is_7m, logprint
-from imaging_parameters import line_imaging_parameters, selfcal_pars, line_parameters
+from metadata_tools import (determine_imsize, determine_phasecenter, is_7m,
+                            logprint as logprint_, check_channel_flags)
+from imaging_parameters import line_imaging_parameters, selfcal_pars, line_parameters, flag_thresholds
 from unite_contranges import merge_contdotdat
-from taskinit import msmdtool, iatool, mstool
 from metadata_tools import effectiveResolutionAtFreq
+from cube_finalizing import beam_correct_cube
 from create_clean_model import create_clean_model
 from getversion import git_date, git_version
 msmd = msmdtool()
 ia = iatool()
 ms = mstool()
 
+def logprint(msg, origin="almaimf_line_imaging", **kwargs):
+    print(msg)
+    return logprint_(msg, origin=origin, **kwargs)
+
 with open('to_image.json', 'r') as fh:
     to_image = json.load(fh)
-with open('metadata.json', 'r') as fh:
-    metadata = json.load(fh)
 
 if os.getenv('LOGFILENAME'):
     casalog.setlogfile(os.path.join(os.getcwd(), os.getenv('LOGFILENAME')))
 
+if os.getenv('PRODUCT_DIRECTORY') and os.getenv('WORK_DIRECTORY'):
+    copy_files = True
+    workdir = os.getenv('WORK_DIRECTORY') +"/"
+    proddir = os.getenv('PRODUCT_DIRECTORY') +"/"
+    imaging_root = workdir
+    logprint("Using working directory {workdir} and product directory {proddir}"
+             .format(workdir=workdir, proddir=proddir))
+else:
+    copy_files = False
+    imaging_root = os.path.join(os.getcwd(), 'imaging_results')
+    logprint("Imaging root set to '{0}'".format(imaging_root))
 
 if os.getenv('FIELD_ID'):
-    field_id = os.getenv('FIELD_ID')
+    if 'field_id' in locals():
+        if os.getenv('FIELD_ID') is not None and os.getenv('FIELD_ID') != field_id:
+            raise ValueError("Mismatch between ENVIRON field id {0} and field id {1}"
+                             .format(os.getenv('FIELD_ID'), field_id))
+        # else: all is good, go on
+    else:
+        field_id = os.getenv('FIELD_ID')
     for band in to_image:
         to_image[band] = {key:value for key, value in to_image[band].items()
                           if key == field_id}
 else:
     field_id = 'all'
 
+dryrun = bool(os.getenv('DRYRUN') or (dryrun if 'dryrun' in locals() else False))
 
 if os.getenv('BAND_NUMBERS'):
     band_list = list(map(lambda x: "B"+x, os.getenv('BAND_NUMBERS').split(',')))
@@ -74,10 +144,9 @@ if os.getenv('BAND_NUMBERS'):
         if BB not in to_image:
             raise ValueError("Band {0} was specified but is not in to_image.json"
                              .format(BB))
-else:
+elif 'band_list' not in locals():
     band_list = list(to_image.keys())
 
-imaging_root = "imaging_results"
 if not os.path.exists(imaging_root):
     os.mkdir(imaging_root)
 
@@ -95,7 +164,7 @@ if 'only_7m' not in locals():
 
 if os.getenv('LINE_NAME'):
     line_name = os.getenv('LINE_NAME').lower()
-else:
+elif 'line_name' not in locals():
     raise ValueError("line_name was not defined")
 
 if 'do_contsub' not in locals():
@@ -105,14 +174,34 @@ if 'do_contsub' not in locals():
         do_contsub = False
 if do_contsub:
     contsub_suffix = '.contsub'
+
+    # needed for cont.dat files
+    with open('metadata.json', 'r') as fh:
+        metadata = json.load(fh)
 else:
     contsub_suffix = ''
 
-# hacky approach to paralellism
-if os.getenv('MPICASA'):
-    parallel=True
+if os.getenv('DO_NOT_CONCAT'):
+    do_not_concat = os.getenv('DO_NOT_CONCAT').lower() != 'false'
+    logprint("DO_NOT_CONCAT was set")
 else:
-    parallel=False
+    do_not_concat = False
+
+if os.getenv('TEMP_WORKDIR'):
+    temp_workdir = os.getenv('TEMP_WORKDIR')
+else:
+    temp_workdir = "_".join((field_id,
+            line_name,
+            ('7M' if only_7m else ('12M' if exclude_7m else '7M12M')),
+            "_".join(band_list)
+            ))
+if not os.path.exists(temp_workdir):
+    os.mkdir(temp_workdir)
+logprint("Working in directory {0}".format(temp_workdir))
+os.chdir(temp_workdir)
+
+# hacky approach to paralellism
+parallel = bool(os.getenv('MPICASA'))
 
 # TODO: make this optional
 do_export_fits = True
@@ -125,12 +214,31 @@ chanchunks = int(os.getenv('CHANCHUNKS') or 16)
 # (TODO: check whether we actually want to continue sometimes)
 continue_imaging = False
 
-def set_impars(impars, line_name, vis, spwnames=None):
+def sethistory(prefix, nsigma=None, impars=None, suffixes=('.image', '.residual', '.model')):
+    for suffix in suffixes:
+        ia.open(prefix+suffix)
+        if impars is not None:
+            ia.sethistory(origin='almaimf_line_imaging',
+                          history=["{0}: {1}".format(key, val) for key, val in
+                                   impars.items()])
+        if nsigma is not None:
+            ia.sethistory(origin='almaimf_line_imaging',
+                          history="nsigma: {0}".format(nsigma))
+        ia.sethistory(origin='almaimf_line_imaging',
+                      history=["git_version: {0}".format(git_version),
+                               "git_date: {0}".format(git_date)])
+        ia.sethistory(origin='almaimf_line_imaging',
+                      history=['CASA version: {0}'.format(versionstring)])
+        ia.close()
+        ia.done()
+
+def set_impars(impars, line_name, vis, linpars, spwnames=None):
+    impars = impars.copy()
     if line_name not in ('full', ) + spwnames:
         local_impars = {}
         if 'width' in linpars:
             local_impars['width'] = linpars['width']
-        else:
+        elif 'restfreq' in linpars:
             # calculate the channel width
             chanwidths = []
             for vv in vis:
@@ -162,17 +270,22 @@ def set_impars(impars, line_name, vis, spwnames=None):
             if np.any(np.array(chanwidths) - chanwidth > 1e-4):
                 raise ValueError("Varying channel widths.")
             local_impars['width'] = '{0:.2f}km/s'.format(np.round(chanwidth, 2))
+        else:
+            raise ValueError("linpars (the line-specific parameters) were not set correctly")
 
         local_impars['restfreq'] = linpars['restfreq']
-        # calculate vstart
-        vstart = u.Quantity(linpars['vlsr'])-u.Quantity(linpars['cubewidth'])/2
-        local_impars['start'] = '{0:.1f}km/s'.format(vstart.value)
-        local_impars['chanchunks'] = int(chanchunks)
+        if 'cubewidth' in linpars:
+            # calculate vstart
+            vstart = u.Quantity(linpars['vlsr'])-u.Quantity(linpars['cubewidth'])/2
+            local_impars['start'] = '{0:.1f}km/s'.format(vstart.value)
+            local_impars['chanchunks'] = int(chanchunks)
 
-        local_impars['nchan'] = int((u.Quantity(line_parameters[field][line_name]['cubewidth'])
-                                    / u.Quantity(local_impars['width'])).value)
-        if local_impars['nchan'] < local_impars['chanchunks']:
-            local_impars['chanchunks'] = local_impars['nchan']
+            # in this case, line_name is OK because we only specify nchan for non-full-cubes
+            # (but if we specify nchan for any fullcubes, this could break)
+            local_impars['nchan'] = int((u.Quantity(line_parameters[field][line_name]['cubewidth'])
+                                        / u.Quantity(local_impars['width'])).value)
+            if local_impars['nchan'] < local_impars['chanchunks']:
+                local_impars['chanchunks'] = local_impars['nchan']
         impars.update(local_impars)
     else:
         impars['chanchunks'] = int(chanchunks)
@@ -184,7 +297,27 @@ def set_impars(impars, line_name, vis, spwnames=None):
             cc -= 1
         impars['chanchunks'] = cc
 
+    # support for chanchunks forcibly removed in casa 5.8 / 6.2
+    if (version[0] == 5 and version[1] >= 8) or (version[0] == 6 and version[1] >= 2):
+        del impars['chanchunks']
+
     return impars
+
+def copy_ms(src, dest):
+    if os.path.exists(dest):
+        if not os.getenv('CONTINUE_IF_MS_EXISTS'):
+            raise IOError("The target directory {dest} already exists".format(dest=dest))
+        else:
+            logprint("{0} exists, using it as concatvis".format(dest), origin='almaimf_line_imaging')
+            return dest
+    else:
+        logprint("Copying concatvis {0}->{1}".format(src, dest), origin='almaimf_line_imaging')
+        shutil.copytree(src, dest)
+        # could use filecmp.dircmp to do a deeper comparison, but that might be expensive and unnecessary
+        assert os.path.exists(dest)
+        return dest
+
+
 
 if exclude_7m:
     arrayname = '12M'
@@ -219,6 +352,18 @@ for band in band_list:
             spw = str(spw)
             band = str(band)
 
+            flagkey = "{0}_{1}_{2}_spw{3}".format(field, band, arrayname, spw)
+            if flagkey in flag_thresholds:
+                flagging_tolerance = flag_thresholds[flagkey]['tolerance']
+                nflag_threshold = flag_thresholds[flagkey]['nchan']
+            else:
+                # defaults
+                logprint("Using default threshold fraction=0.01 flagthresh=10")
+                flagging_tolerance = 0.01
+                nflag_threshold = 10
+            logprint("Set flag threshold to {0} per channel for {1} channels (flagkey={2})"
+                     .format(flagging_tolerance, nflag_threshold, flagkey))
+
             vis = list(map(str, to_image[band][field][spw]))
 
             # concatenate MSes prior to imaging
@@ -234,7 +379,7 @@ for band in band_list:
 
             if do_contsub and os.path.exists(concatvis+".contsub"):
                 vis = [concatvis+".contsub"]
-            elif os.path.exists(concatvis):
+            elif os.path.exists(concatvis) and not do_not_concat:
                 # we will use concatvis for the metadata
                 vis = [concatvis]
             else:
@@ -263,9 +408,11 @@ for band in band_list:
                 elif only_7m:
                     vis = [ms_ for ms_ in vis if is_7m(ms_)]
 
+            linpars = {}
             # load in the line parameter info
-            if line_name not in ('full', ) + spwnames:
-                linpars = line_parameters[field][line_name]
+            line_band_name = f'{line_name}_{band}' if 'spw' in line_name else line_name
+            if line_band_name in line_parameters[field]:
+                linpars = line_parameters[field][line_band_name]
                 restfreq = u.Quantity(linpars['restfreq'])
                 vlsr = u.Quantity(linpars['vlsr'])
 
@@ -278,12 +425,12 @@ for band in band_list:
                     # Skip this spw: it is not in range
                     logprint("Skipped spectral window {0} for line {1}"
                              " with frequency {2} because it's out of range"
-                             .format(spw, line_name, targetfreq),
+                             .format(spw, line_band_name, targetfreq),
                              origin='almaimf_line_imaging')
                     continue
                 else:
                     logprint("Matched spectral window {0} to line {1}"
-                             .format(spw, line_name),
+                             .format(spw, line_band_name),
                              origin='almaimf_line_imaging')
             elif line_name in spwnames and line_name.lstrip("spw") != spw:
                 logprint("Skipped spectral window {0} because it's not {1}"
@@ -292,8 +439,10 @@ for band in band_list:
                 continue
 
 
-            if os.getenv('DO_NOT_CONCAT'):
+            if do_not_concat:
                 concatvis = vis
+                logprint("DO_NOT_CONCAT set; NOT concatenating vis={0}.".format(vis),
+                         origin='almaimf_line_imaging')
             elif any('concat' in x for x in vis):
                 logprint("NOT concatenating vis={0}.".format(vis),
                          origin='almaimf_line_imaging')
@@ -307,15 +456,22 @@ for band in band_list:
                              .format(vis=vis, concatvis=concatvis),
                              origin='almaimf_line_imaging'
                             )
+                    if dryrun:
+                        raise ValueError("Cannot do a dry run without concatenated data in place")
+                    for vv in vis:
+                        # allow up to 1% flagging
+                        check_channel_flags(vv, tolerance=flagging_tolerance, nchan_tolerance=nflag_threshold)
                     concat(vis=vis, concatvis=concatvis)
 
             if do_contsub:
 
                 if not os.path.exists(concatvis+".contsub"):
+                    if dryrun:
+                        raise ValueError("Cannot do a dry run without contsub concatenated data in place")
                     logprint("Concatvis contsub {0}.contsub does not exist, doing continuum subtraction.".format(str(concatvis)),
                              origin='almaimf_line_imaging')
 
-                    contfile12m, contfile7m = merge_contdotdat(band, field,
+                    contfile12m, contfile7m = merge_contdotdat(field, band,
                                                                basepath='.',
                                                                datfiles=metadata[band][field]['cont.dat'].values())
                     contfile = contfile12m
@@ -350,6 +506,29 @@ for band in band_list:
                 # if do_contsub, we want to use the contsub'd MS
                 concatvis = concatvis + contsub_suffix
 
+            try:
+                # check that autocorrs are flagged out
+                if 'concat' in concatvis:
+                    flagsum = flagdata(vis=concatvis, mode='summary', uvrange='0~1m')
+                    if flagsum is not None and 'flagged' in flagsum and flagsum['flagged'] != flagsum['total']:
+                        # if 'flagged' isn't in flagsum, it's an empty dict
+                        raise ValueError("Found unflagged autocorrelation data (or at least, short baselines) in {0}".format(concatvis))
+
+                    check_channel_flags(concatvis, tolerance=flagging_tolerance, nchan_tolerance=nflag_threshold)
+
+                elif isinstance(concatvis, list):
+                    for vv in concatvis:
+                        flagsum = flagdata(vis=vv, mode='summary', uvrange='0~1m')
+                        if flagsum is not None and 'flagged' in flagsum and flagsum['flagged'] != flagsum['total']:
+                            raise ValueError("Found unflagged autocorrelation data (or at least, short baselines) in {vv}".format(vv=vv))
+            except RuntimeError as ex:
+                if "The selected table has zero rows" in str(ex):
+                    # this is OK: there are no autocorrs!
+                    pass
+                else:
+                    raise ex
+
+
             if 'spw' in line_name:
                 if not int(line_name.lstrip('spw')) == int(spw):
                     raise ValueError("Line name is {0}, which does not match spw number {1}".format(line_name, spw))
@@ -359,22 +538,92 @@ for band in band_list:
                                          line_name, contsub_suffix))
             lineimagename = os.path.join(imaging_root, baselineimagename)
 
+            # STAGING: so you can do the work on a different HD
+            if copy_files and not dryrun:
+                # _copy_ the MS file to the working directory
+
+
+                # first, make sure that we're not copying the MS into itself - that would be bad.
+
+                if do_not_concat:
+                    assert os.path.split(concatvis[0])[0] != workdir
+                    newconcatvis = [os.path.join(workdir, os.path.basename(vv))
+                                    for vv in concatvis]
+                    concatvis = [copy_ms(vv, newvv)
+                                 for vv,newvv in zip(concatvis, newconcatvis)]
+                else:
+                    assert os.path.split(concatvis)[0] != workdir
+                    newconcatvis = os.path.join(workdir, os.path.basename(concatvis))
+                    concatvis = copy_ms(concatvis, newconcatvis)
+
+                # do a preliminary check: don't copy anything if both src & dest exist;
+                # that indicates a severe problem
+                for suffix in ('.image', '.image.pbcor', '.mask', '.model',
+                               '.pb', '.psf', '.residual', '.sumwt', '.weight',
+                               '.contcube.model',
+                               '.image.fits',
+                               '.image.pbcor.fits',
+                               '.image.mincube.fits',
+                               '.image.pbcor.mincube.fits',
+                              ):
+                    destdir = imaging_root
+                    dest = os.path.join(imaging_root, baselineimagename+suffix)
+                    src = os.path.join(proddir,
+                                       baselineimagename + suffix)
+                    if os.path.exists(dest) and os.path.exists(src):
+                        # if ANY of the target destinations exist, we need to fail
+                        raise ValueError("Target destination {0} exists and we were trying to copy into it from {1}.".format(dest, src))
+
+                # we need to copy the files to our working directory if they exist
+                # (this allows for continuation of partly-completed processes
+                # and reuse of existing startmodels)
+                for suffix in ('.image', '.image.pbcor', '.mask', '.model',
+                               '.pb', '.psf', '.residual', '.sumwt', '.weight',
+                               '.contcube.model', '.image.fits',
+                               '.image.pbcor.fits',
+                              ):
+                    destdir = imaging_root
+                    dest = os.path.join(imaging_root, baselineimagename+suffix)
+                    src = os.path.join(proddir,
+                                       baselineimagename + suffix)
+                    logprint("Planning to move {0}->{1} ({2})".format(src, destdir, dest), origin='almaimf_line_imaging')
+                    if os.path.exists(dest):
+                        logprint("Destination {0} exists".format(dest), origin='almaimf_line_imaging')
+                        if False: #not os.getenv('CONTINUE_IF_MS_EXISTS'):
+                            raise ValueError("Target destination {0} exists and we were trying to copy into it.".format(dest))
+                    elif os.path.exists(src):
+                        logprint("Moving {0}->{1} ({2})".format(src, destdir, dest), origin='almaimf_line_imaging')
+                        shutil.move(src, destdir)
+
+                # we don't copy or move over the continuum startmodels b/c the  `make_clean` operates inplace
+                contmodel_path = proddir
+                imaging_results_path_for_contmodel = workdir
+
+            else:
+                contmodel_path = imaging_root
+                imaging_results_path_for_contmodel = imaging_root
+
+
             logprint("Measurement sets are: " + str(concatvis),
                      origin='almaimf_line_imaging')
+            check_channel_flags(concatvis, tolerance=flagging_tolerance, nchan_tolerance=nflag_threshold)
             coosys, racen, deccen = determine_phasecenter(ms=concatvis,
                                                           field=field)
             phasecenter = "{0} {1}deg {2}deg".format(coosys, racen, deccen)
+            # check_channel_flags(concatvis, tolerance=flagging_tolerance, nchan_tolerance=nflag_threshold)
             (dra, ddec, pixscale) = list(determine_imsize(ms=concatvis,
                                                           field=field,
                                                           phasecenter=(racen, deccen),
                                                           spw='all',
-                                                          pixfraction_of_fwhm=1/5. if only_7m else 1/3.,
+                                                          # July 2, 2021 - shrink pixsize to 1/4 (actually was apparently 1/5)
+                                                          pixfraction_of_fwhm=1/5. if only_7m else 1/4.,
                                                           exclude_7m=exclude_7m,
                                                           only_7m=only_7m,
-                                                          min_pixscale=0.1, # arcsec
+                                                          min_pixscale=0.08, # arcsec; dropped 20% on Nov 6, 2020 to handle beam size issues
                                                          ))
             imsize = [int(dra), int(ddec)]
             cellsize = ['{0:0.2f}arcsec'.format(pixscale)] * 2
+            # check_channel_flags(concatvis, tolerance=flagging_tolerance, nchan_tolerance=nflag_threshold)
 
             dirty_tclean_made_residual = False
 
@@ -384,15 +633,35 @@ for band in band_list:
                                                          arrayname, robust,
                                                          contsub_suffix.replace(".", "_"))
             if (pars_key+"_"+line_name) in line_imaging_parameters:
+                logprint("Using parameter key {0} instead of {1}".format(pars_key+"_"+line_name, pars_key))
+                logprint("This means we're using parameters {0} instead of {1}".format(line_imaging_parameters[pars_key+"_"+line_name],
+                                                                                       line_imaging_parameters[pars_key]))
                 pars_key = pars_key+"_"+line_name
             impars = line_imaging_parameters[pars_key]
 
-            set_impars(impars=impars, line_name=line_name, vis=vis, spwnames=spwnames)
+            impars = set_impars(impars=impars, line_name=line_name, vis=vis,
+                                linpars=linpars, spwnames=spwnames)
 
-            impars['imsize'] = imsize
-            impars['cell'] = cellsize
-            impars['phasecenter'] = phasecenter
-            impars['field'] = [field.encode()]
+            if 'imsize' not in impars:
+                impars['imsize'] = imsize
+            else:
+                # leave untouched
+                logprint("Overriding imsize={0} to {1}".format(imsize, impars['imsize']))
+
+            if 'cell' not in impars:
+                impars['cell'] = cellsize
+            else:
+                # leave untouched
+                logprint("Overriding cell={0} to {1}".format(cellsize, impars['cell']))
+
+            if 'phasecenter' not in impars:
+                impars['phasecenter'] = phasecenter
+            else:
+                # leave impars['phasecenter'] untouched
+                logprint("Overriding phasecenter={0} to {1}".format(phasecenter, impars['phasecenter']))
+
+            #impars['field'] = [field.encode()]
+            impars['field'] = field
 
             mask_out_endchannels = False
             if 'mask_out_endchannels' in impars:
@@ -409,19 +678,29 @@ for band in band_list:
                 # need the dirty image to populate our model
                 make_dirty_image = True
 
+            logprint("make_dirty_image is set to {0}".format(make_dirty_image))
+
             # start with cube imaging
             # step 1 is dirty imaging
 
             if make_dirty_image and not os.path.exists(lineimagename+".image") and not os.path.exists(lineimagename+".residual"):
-                if os.path.exists(lineimagename+".psf"):
-                    logprint("WARNING: The PSF for {0} exists, but no image exists."
-                             "  This likely implies that an ongoing or incomplete "
-                             "imaging run for this file exists.  It will not be "
-                             "imaged this time; please check what is happening.  "
-                             "(this warning issued /before/ dirty imaging)"
-                             .format(lineimagename),
-                             origin='almaimf_line_imaging')
-                    continue
+                psf_exists = os.path.exists(lineimagename+".psf")
+                if psf_exists:
+                    if os.getenv('USE_EXISTING_PSF'):
+                        logprint(f"WARNING: The PSF for {lineimagename} exists, but no image exists.  "
+                                 "USE_EXISTING_PSF was set, though, so imaging will continue.",
+                                 origin='almaimf_line_imaging')
+                    else:
+                        logprint("WARNING: The PSF for {0} exists, but no image exists."
+                                 "  This likely implies that an ongoing or incomplete "
+                                 "imaging run for this file exists.  It will not be "
+                                 "imaged this time; please check what is happening.  "
+                                 "(this warning issued /before/ dirty imaging)"
+                                 .format(lineimagename),
+                                 origin='almaimf_line_imaging',
+                                 priority='WARNING'
+                                 )
+                        continue
                 # first iteration makes a dirty image to estimate the RMS
                 impars_dirty = impars.copy()
                 impars_dirty['niter'] = 0
@@ -434,21 +713,17 @@ for band in band_list:
 
                 logprint("Dirty imaging parameters are {0}".format(impars_dirty),
                          origin='almaimf_line_imaging')
-                tclean(vis=concatvis,
-                       imagename=lineimagename,
-                       restoringbeam='', # do not use restoringbeam='common'
-                       # it results in bad edge channels dominating the beam
-                       **impars_dirty
-                      )
-                for suffix in ('image', 'residual'):
-                    ia.open(lineimagename+"."+suffix)
-                    ia.sethistory(origin='almaimf_line_imaging',
-                                  history=["{0}: {1}".format(key, val) for key, val in
-                                           impars_dirty.items()])
-                    ia.sethistory(origin='almaimf_line_imaging',
-                                  history=["git_version: {0}".format(git_version),
-                                           "git_date: {0}".format(git_date)])
-                    ia.close()
+                # check_channel_flags(concatvis, tolerance=flagging_tolerance, nchan_tolerance=nflag_threshold)
+                if not dryrun:
+                    tclean(vis=concatvis,
+                           imagename=lineimagename,
+                           restoringbeam='', # do not use restoringbeam='common'
+                           calcpsf=not psf_exists,
+                           # it results in bad edge channels dominating the beam
+                           **impars_dirty
+                          )
+                    sethistory(lineimagename, impars=impars_dirty, suffixes=(".image", ".residual"))
+                # check_channel_flags(concatvis, tolerance=flagging_tolerance, nchan_tolerance=nflag_threshold)
                 for suffix in ("mask", "model"):
                     bad_fn = lineimagename + "." + suffix
                     if os.path.exists(bad_fn):
@@ -483,18 +758,30 @@ for band in band_list:
                          "imaged this time; please check what is happening."
                          "(warning issued /after/ dirty imaging)"
                          .format(lineimagename),
-                         origin='almaimf_line_imaging')
+                         origin='almaimf_line_imaging',
+                         priority='WARNING'
+                         )
                 # just skip the rest here
                 continue
 
-            if make_dirty_image:
+            # if the dirty image was made or exists
+            if make_dirty_image and not dryrun:
                 # the threshold needs to be computed if any imaging is to be done (either contsub or not)
                 # no .image file is produced, only a residual
                 logprint("Computing residual image statistics for {0}".format(lineimagename),
                          origin='almaimf_line_imaging')
                 ia.open(lineimagename+".residual")
-                stats = ia.statistics(robust=True)
-                rms = float(stats['medabsdevmed'] * 1.482602218505602)
+                try:
+                    stats = ia.statistics(robust=True)
+                    rms = float(stats['medabsdevmed'] * 1.482602218505602)
+                except RuntimeError as ex:
+                    if "Binning accounting error" in str(ex):
+                        logprint("Could not use robust statistics; reverting to non-robust",
+                                 origin="almaimf_line_imaging")
+                        stats = ia.statistics()
+                        rms = stats['rms']
+                    else:
+                        raise ex
                 ia.close()
 
                 if rms >= 1:
@@ -539,8 +826,12 @@ for band in band_list:
                     make_continuum_startmodel = True
                     # remove the model image
                     # (it should be created by dirty imaging above)
+                    if os.path.exists(lineimagename+".model") and impars['startmodel'] == os.path.exists(lineimagename+".model"):
+                        logprint("Startmodel {0} was specifield and exists; we are proceeding assuming "
+                                 "that this is a full-cube startmodel.".format(impars['startmodel']))
+                        make_continuum_startmodel = False
                     if did_dirty_imaging and os.path.exists(lineimagename+".model"):
-                        logprint("Removing {0}.model because we're using starmodel instead"
+                        logprint("Removing {0}.model because we're using startmodel instead"
                                  .format(lineimagename),
                                  origin='almaimf_line_imaging')
                         shutil.rmtree(lineimagename+".model")
@@ -565,10 +856,26 @@ for band in band_list:
                         for fn in glob.glob(lineimagename+".workdirectory/*.model"):
                             shutil.rmtree(fn)
 
-                    if make_continuum_startmodel:
-                        contmodel = create_clean_model(cubeimagename=baselineimagename,
-                                                       contimagename=impars['startmodel'],
-                                                       imaging_results_path=imaging_root)
+                    if make_continuum_startmodel and not dryrun:
+                        contmodel = "{0}/{1}.contcube.model".format(imaging_results_path_for_contmodel,
+                                                                    baselineimagename)
+
+                        if os.path.exists(contmodel):
+                            logprint("Not creating continuum model {0} because it already exists".format(contmodel))
+                        else:
+                            logprint("Creating continuum model {0} from cubeimagename={1}, contimagename={2}, imaging_results_path={3}, contmodel_path={4}"
+                                     .format(contmodel, baselineimagename, impars['startmodel'], imaging_results_path_for_contmodel, contmodel_path))
+                            new_contmodel = create_clean_model(cubeimagename=baselineimagename,
+                                                               contimagename=impars['startmodel'],
+                                                               imaging_results_path=imaging_results_path_for_contmodel,
+                                                               contmodel_path=contmodel_path)
+                            if copy_files:
+                                logprint("Moving contmodel from {0} to {1}".format(new_contmodel, contmodel))
+                                shutil.move(new_contmodel, contmodel)
+                            else:
+                                # if we're not moving these around, they should be the same file
+                                assert contmodel == new_contmodel
+
                         impars['startmodel'] = contmodel
 
 
@@ -590,11 +897,50 @@ for band in band_list:
                 # elif os.path.exists(lineimagename+".mask"):
                 #     if 'usemask' in impars and impars['usemask'] != 'user':
                 #         raise ValueError("Mask exists but not specified as user.")
+                if ((('mask' not in impars) or ('mask-ranges' in linpars))
+                    and (not os.path.exists(lineimagename+".mask"))):
+                    pblimit = impars['pblimit'] if 'pblimit' in impars else 0.001
+                    logprint("Creating mask from pb with pblimit = {0}"
+                             .format(pblimit), origin='almaimf_line_imaging')
+
+                    #ia.open("{0}.pb".format(lineimagename))
+                    #ia.calcmask(mask="{0}.pb > {1}".format(lineimagename, pblimit),
+                    #            name="pbmask"
+                    #           )
+                    #ia.close()
+                    #makemask(inpimage='{0}.pb'.format(lineimagename),
+                    #         inpmask='{0}.pb:pbmask'.format(lineimagename),
+                    #         output='{0}.mask'.format(lineimagename),
+                    #         mode='copy')
+                    immath(imagename="{0}.pb".format(lineimagename),
+                           outfile="{0}.mask".format(lineimagename),
+                           expr="iif(IM0>{0},1.0,0.0)".format(pblimit))
+                    assert os.path.exists(lineimagename+".mask"), "bug"
+
+                # this if statement is now (almost?) entirely redundant b/c the
+                # previous ensures that a mask exists
                 if os.path.exists(lineimagename+".mask"):
                     impars['usemask'] = 'user'
+
+                    if 'mask' in impars and impars['mask'] != '':
+                        # this is to handle the case that a user has specified a mask:
+                        # tclean will fail if the imagname.mask exists (and we
+                        # know it does; see check above) but a mask is
+                        # specified
+                        # (This is only needed if dirty imaging is _not_ run)
+                        logprint("Found an existing mask, but a user mask {0} was specified,"
+                                 " so we are overwriting the existing mask.".format(impars['mask']),
+                                 origin='almaimf_line_imaging')
+                        shutil.rmtree(lineimagename+".mask")
+                        shutil.copytree(impars['mask'], lineimagename+".mask")
+
                     impars['mask'] = '' # the mask exists, so CASA can't be told to use it
 
                     if mask_out_endchannels:
+                        # we mask out the end channels because sometimes these
+                        # channels have less coverage, and attempting to clean
+                        # these outer channels frequently causes tclean to
+                        # diverge
                         logprint("Masking out end channels {0}".format(mask_out_endchannels),
                                  origin="almaimf_line_imaging")
                         ia.open(infile=lineimagename+".mask")
@@ -613,7 +959,35 @@ for band in band_list:
                                     )
 
                         ia.close()
+                    if ((line_band_name in line_parameters[field]
+                         and 'mask-ranges' in linpars)):
+                        ia.open(infile=lineimagename+".mask")
+                        for maskrange in linpars['mask-ranges']:
+                            logprint("Masking out selected channels {0}".format(maskrange),
+                                     origin="almaimf_line_imaging")
 
+                            veltofreq = u.Quantity(maskrange, u.km/u.s).to(u.GHz, u.doppler_radio(restfreq))
+                            startchan = np.argmin(np.abs(veltofreq[0] - freqs))
+                            endchan = np.argmin(np.abs(veltofreq[1] - freqs))
+                            if endchan < startchan:
+                                startchan, endchan = endchan, startchan
+
+                            logprint("Masking out selected channels {0}-{1}".format(startchan, endchan),
+                                     origin="almaimf_line_imaging")
+                            flagchans = ia.getchunk(blc=[0,0,0, startchan],
+                                                    trc=[-1,-1,-1, endchan])
+                            logprint("Nchan before: included={0} excluded={1}".format(flagchans.sum(), (flagchans==0).sum()),
+                                     origin="almaimf_line_imaging")
+                            flagchans[:] = 0
+                            logprint("Nchan after: included={0} excluded={1}".format(flagchans.sum(), (flagchans==0).sum()),
+                                     origin="almaimf_line_imaging")
+                            ia.putchunk(pixels=flagchans, blc=[0,0,0, startchan],)
+
+                        ia.close()
+                elif ((line_band_name in line_parameters[field]
+                     and 'mask-ranges' in linpars)):
+                    raise ValueError("Mask-ranges was specified but no mask is available - this might "
+                                     "be a corner case that needs to be implemented")
 
                 # SANITY CHECK:
                 if os.path.exists(lineimagename+".model"):
@@ -627,14 +1001,22 @@ for band in band_list:
                 # when being run from an MPI session.
                 impars['parallel'] = parallel
 
+                if os.path.exists(lineimagename+".psf"):
+                    psf_exists = True
+                    logprint("Found existing PSF file", origin='almaimf_line_imaging')
 
-                tclean(vis=concatvis,
-                       imagename=lineimagename,
-                       restoringbeam='', # do not use restoringbeam='common'
-                       # it results in bad edge channels dominating the beam
-                       calcres=False,
-                       **impars
-                      )
+                # check_channel_flags(concatvis, tolerance=flagging_tolerance, nchan_tolerance=nflag_threshold)
+                if not dryrun:
+                    logprint("Cleaning with pars {0}".format(impars), origin='almaimf_line_imaging')
+                    tclean(vis=concatvis,
+                           imagename=lineimagename,
+                           restoringbeam='', # do not use restoringbeam='common'
+                           # it results in bad edge channels dominating the beam
+                           calcres=False,
+                           calcpsf=not psf_exists,
+                           **impars
+                          )
+                # check_channel_flags(concatvis, tolerance=flagging_tolerance, nchan_tolerance=nflag_threshold)
                 # re-do the tclean once more, with niter=0, to force recalculation of the residual
                 niter = impars['niter']
                 impars['niter'] = 0
@@ -644,35 +1026,100 @@ for band in band_list:
                     impars['startmodel'] = ''
                 else:
                     smod = ''
-                tclean(vis=concatvis,
-                       imagename=lineimagename,
-                       restoringbeam='',
-                       calcres=True,
-                       **impars
-                      )
-                impars['niter'] = niter
-                impars['startmodel'] = smod
-                for suffix in ('image', 'residual', 'model'):
-                    ia.open(lineimagename+"."+suffix)
-                    ia.sethistory(origin='almaimf_line_imaging',
-                                  history=["{0}: {1}".format(key, val) for key, val in
-                                           impars.items()])
-                    ia.sethistory(origin='almaimf_line_imaging',
-                                  history=["nsigma: {0}".format(nsigma)])
-                    ia.sethistory(origin='almaimf_line_imaging',
-                                  history=["git_version: {0}".format(git_version),
-                                           "git_date: {0}".format(git_date)])
-                    ia.close()
+                if 'mask' in impars:
+                    mask = impars['mask']
+                    impars['mask'] = ''
+                else:
+                    mask = ''
+                # check_channel_flags(concatvis, tolerance=flagging_tolerance, nchan_tolerance=nflag_threshold)
+                if not dryrun:
+                    logprint("Final zero-iter clean to restore residual", origin='almaimf_line_imaging')
+                    tclean(vis=concatvis,
+                           imagename=lineimagename,
+                           restoringbeam='',
+                           calcres=True,
+                           calcpsf=False, # not needed; PSF already exists
+                           **impars
+                          )
+                    impars['niter'] = niter
+                    impars['startmodel'] = smod
+                    impars['mask'] = mask
+                    sethistory(lineimagename, nsigma=nsigma, impars=impars)
+                # check_channel_flags(concatvis, tolerance=flagging_tolerance, nchan_tolerance=nflag_threshold)
 
-                impbcor(imagename=lineimagename+'.image',
-                        pbimage=lineimagename+'.pb',
-                        outfile=lineimagename+'.image.pbcor',
-                        cutoff=0.2,
-                        overwrite=True)
+                if not dryrun:
+                    logprint("pbcorrecting {0}".format(lineimagename), origin='almaimf_line_imaging')
+                    impbcor(imagename=lineimagename+'.image',
+                            pbimage=lineimagename+'.pb',
+                            outfile=lineimagename+'.image.pbcor',
+                            cutoff=0.2,
+                            overwrite=True)
 
-                if do_export_fits:
-                    exportfits(lineimagename+".image", lineimagename+".image.fits", overwrite=True)
-                    exportfits(lineimagename+".image.pbcor", lineimagename+".image.pbcor.fits", overwrite=True)
+                    if do_export_fits:
+                        exportfits(lineimagename+".image", lineimagename+".image.fits", overwrite=True)
+                        exportfits(lineimagename+".image.pbcor", lineimagename+".image.pbcor.fits", overwrite=True)
+
+                        cube = SpectralCube.read(lineimagename+".image.fits", use_dask=True)
+                        cutslc = cube.subcube_slices_from_mask(cube.mask)
+                        cube[cutslc].write(lineimagename+".image.mincube.fits", overwrite=True)
+                        del cube
+                        SpectralCube.read(lineimagename+".image.pbcor.fits", use_dask=True)[cutslc].write(lineimagename+".image.pbcor.mincube.fits", overwrite=True)
+                        SpectralCube.read(lineimagename+".model", use_dask=True, format='casa_image')[cutslc].write(lineimagename+".model.mincube.fits", overwrite=True)
+                        SpectralCube.read(lineimagename+".residual", use_dask=True, format='casa_image')[cutslc].write(lineimagename+".residual.mincube.fits", overwrite=True)
+
+                        # write out JvM-corrected cubes
+                        beam_correct_cube(lineimagename)
+
+
+            if copy_files and not dryrun:
+                for suffix in ('.image', '.image.pbcor', '.mask', '.model',
+                               '.pb', '.psf', '.residual', '.sumwt', '.weight',
+                               '.contcube.model',
+                               '.model.mincube.fits',
+                               '.residual.mincube.fits',
+                               '.image.fits',
+                               '.image.mincube.fits',
+                               '.image.pbcor.fits',
+                               '.image.pbcor.mincube.fits',
+                               '.JvM.image.pbcor.fits',
+                               '.JvM.image.fits',
+                               '.flatpb.fits',
+                              ):
+                    src = lineimagename+suffix
+                    dest = proddir
+                    destfile = os.path.join(proddir, os.path.basename(src))
+                    if os.path.exists(src):
+                        if os.path.exists(destfile):
+                            logprint("Destination {0} exists".format(destfile), origin='almaimf_line_imaging')
+                            if not os.getenv('CONTINUE_IF_MS_EXISTS'):
+                                raise ValueError("Target destination {0} exists and we were trying to copy into it.".format(destfile))
+                            else:
+                                logprint("Removing the workingdir file {0}".format(src), origin='almaimf_line_imaging')
+                                if src.endswith('fits'):
+                                    os.remove(src)
+                                else:
+                                    shutil.rmtree(src)
+                        else:
+                            logprint("Moving {0}->{1}".format(src, dest), origin='almaimf_line_imaging')
+                            shutil.move(src, dest)
+
+                # use the variable name 'newconcatvis' here since that should
+                # only ever take on the value specified in copy_files; this is
+                # a safety mechanism to make sure we don't accidentally delete
+                # the original file.
+                if do_not_concat:
+                    # sanity check: make sure `newconcatvis` was set to be a list
+                    assert isinstance(newconcatvis, list)
+                    for newvv in newconcatvis:
+                        logprint("Removing MS file {0} from working directory {1}"
+                                 .format(newvv, workdir),
+                                 origin='almaimf_line_imaging')
+                        shutil.rmtree(newvv)
+                else:
+                    logprint("Removing MS file {0} from working directory {1}"
+                             .format(newconcatvis, workdir),
+                             origin='almaimf_line_imaging')
+                    shutil.rmtree(newconcatvis)
 
 
             logprint("Completed {0}->{1}".format(vis, concatvis), origin='almaimf_line_imaging')

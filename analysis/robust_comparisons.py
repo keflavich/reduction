@@ -25,7 +25,7 @@ def make_robust_comparison_figures(fieldname, bandname,
     noisereg = regions.read_ds9(noiseregfn)
 
     baseimagename = '{imageresultspath}/{fieldname}_{bandname}_{uidname}_continuum_merged'.format(**locals())
-    
+
     fig = pl.figure(1, figsize=(20,10))
     fig.clf()
 
@@ -33,6 +33,7 @@ def make_robust_comparison_figures(fieldname, bandname,
 
     beams = {}
     rms = {}
+    dynamicrange = {}
 
 
     for ii,array in enumerate(arrays):
@@ -60,34 +61,63 @@ def make_robust_comparison_figures(fieldname, bandname,
                 ax.set_title("{array} r={robust}".format(**locals()))
                 beams[(array, robust)] = beam
                 noise = cube.subcube_from_regions(noisereg).std()
+                peak = cube.max()
                 rms[(array, robust)] = noise
+                dynamicrange[(array, robust)] = (peak / noise).decompose().value
                 print("found {0}".format(imagename),ii,jj,array,robust)
             else:
-                rms[(array, robust)] = np.nan*u.Jy
+                rms[(array, robust)] = np.nan*u.Jy/u.beam
+                dynamicrange[(array, robust)] = np.nan
                 beams[(array, robust)] = Beam(np.nan)
                 print("MISSING {0}".format(imagename),ii,jj,array,robust)
     pl.savefig("{baseimagename}_robust_comparison.png".format(**locals()), bbox_inches='tight')
 
     pl.figure(2).clf()
-    ax1 = pl.subplot(2,1,1)
-    ax2 = pl.subplot(2,1,2)
-    for array, marker in zip(arrays, 'sox'):
-        ax1.plot(robusts, [rms[(array, robust)].value for robust in robusts], label=array, marker=marker)
-        ax2.plot(robusts, [beams[(array, robust)].major.to(u.arcsec).value for robust in robusts], label=array, marker=marker)
+    ax3 = pl.subplot(3,1,1)
+    ax1 = pl.subplot(3,1,2)
+    ax2 = pl.subplot(3,1,3)
 
+    array_label_map = {'12M': 'cleanest',
+                       'bsens_12M': 'bsens'}
+
+    for array, marker in zip(arrays, 'sox'):
+        try:
+            rmses = [rms[(array, robust)].to(u.mJy/u.beam).value for robust in
+                     robusts]
+        except u.UnitConversionError:
+            rmses = [rms[(array, robust)].to(u.mJy).value for robust in
+                     robusts]
+        ax1.plot(robusts, rmses, label=array_label_map[array],
+                 marker=marker)
+        ax2.plot(robusts, [beams[(array, robust)].major.to(u.arcsec).value for
+                           robust in robusts], label=array_label_map[array],
+                 marker=marker)
+        ax3.plot(robusts, [dynamicrange[(array, robust)] for robust in
+                           robusts], label=array_label_map[array],
+                 marker=marker)
+
+
+    ax3.set_xticklabels([])
+    ax1.set_xticklabels([])
     ax2.set_xlabel("Robust Value")
-    ax1.set_ylabel("Noise Estimate (Jy)")
+    ax1.set_ylabel("Noise Estimate (mJy)")
     ax2.set_ylabel("Beam Major")
+    ax3.set_ylabel("Dynamic Range")
 
     pl.figure(2)
-    pl.legend(loc='best')
+    leg = pl.legend(loc='best')
+    pl.setp(leg.texts, family='courier')
+    pl.suptitle(f"{fieldname} {bandname}")
+    pl.tight_layout()
     pl.savefig(baseimagename+'_noise_and_beams_vs_robust.png', bbox_inches='tight')
+    pl.savefig(baseimagename+'_noise_and_beams_vs_robust.pdf', bbox_inches='tight')
 
 if __name__ == "__main__":
     from pathlib import Path
     from os import symlink, chdir, mkdir
     import glob
     releasepath = Path('/orange/adamginsburg/ALMA_IMF/2017.1.01355.L/RestructuredImagingResults/')
+    releasepath = Path('/orange/adamginsburg/ALMA_IMF/2017.1.01355.L/June2021Release/')
     basepath = Path('/orange/adamginsburg/ALMA_IMF/2017.1.01355.L/imaging_results/')
 
     dirnames = {#'fullcubes_12m': 'spw[0-9]_12M_spw[0-9]',
@@ -124,3 +154,29 @@ if __name__ == "__main__":
                                                    uidname=uid,)
 
                 chdir(cwd)
+
+    from zoom_figures import make_zoom, make_multifig, make_robust_comparison
+
+    for band in ('B3','B6'):
+        for fieldid in prefixes:
+            for robust0fn in glob.glob(f'/orange/adamginsburg/ALMA_IMF/RestructuredImagingResults/{fieldid}*/{band}/cleanest/{fieldid}*_{band}_uid___A001_X1296_*_continuum_merged_12M_robust0_selfcal*_finaliter.image.tt0'):
+                pfx = robust0fn.replace(".image.tt0","")
+                print(fieldid, band, pfx)
+                try:
+                    make_robust_comparison(fieldid, band=band, nsigma_linear_max=15, inner_stretch='asinh',
+                                           finaliter_prefix=pfx, suffix='model.tt0', fileformat='casa_image')
+                except FileNotFoundError:
+                    print(f"File not found: {fieldid} {band} {pfx} model.tt0")
+
+                try:
+                    make_robust_comparison(fieldid, band=band, nsigma_linear_max=15, inner_stretch='asinh',
+                                           finaliter_prefix=pfx, suffix='residual.tt0', fileformat='casa_image')
+                except FileNotFoundError:
+                    print(f"File not found: {fieldid} {band} {pfx} residual.tt0")
+
+                try:
+                    make_robust_comparison(fieldid, band=band, nsigma_linear_max=15, inner_stretch='asinh',
+                                           suffix='image.tt0', fileformat='casa_image',
+                                           finaliter_prefix=pfx)
+                except FileNotFoundError:
+                    print(f"File not found: {fieldid} {band} {pfx} image.tt0")

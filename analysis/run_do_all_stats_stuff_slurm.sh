@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH --mail-type=NONE          # Mail events (NONE, BEGIN, END, FAIL, ALL)
 #SBATCH --mail-user=adamginsburg@ufl.edu     # Where to send mail
-#SBATCH --ntasks=8                    # Run on a single CPU
+#SBATCH --ntasks=16                    # Run on a single CPU
 #SBATCH --nodes=1
-#SBATCH --mem=32gb                     # Job memory request
+#SBATCH --mem=64gb                     # Job memory request
 #SBATCH --time=96:00:00               # Time limit hrs:min:sec
 #SBATCH --output=stats_stuff_%j.log
 #SBATCH --export=ALL
@@ -25,7 +25,7 @@ echo $?
 
 
 
-export CASA=/orange/adamginsburg/casa/casa-pipeline-release-5.6.1-8.el7/bin/casa
+#export CASA=/orange/adamginsburg/casa/casa-pipeline-release-5.6.1-8.el7/bin/casa
 export IPYTHON=/orange/adamginsburg/miniconda3/envs/casa6_py36/bin/ipython 
 
 

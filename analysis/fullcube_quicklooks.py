@@ -34,25 +34,35 @@ nthreads = 1
 scheduler = 'synchronous'
 
 use_temp_dir = os.getenv('USE_TEMP_ZARR')
+os.environ['TMPDIR'] = '/blue/adamginsburg/adamginsburg/tmp/'
 
-cores = os.getenv('SLURM_CPUS_ON_NODE')
-if cores is not None:
-    cores = int(cores)
-    nthreads = cores
-if cores > 1:
-    from dask.distributed import Client
-    #scheduler = 'threads'
-    nnodes = os.getenv('SLURM_JOB_NUM_NODES')
-    nnodes = int(nnodes) if nnodes is not None else 1
+nnodes = int(os.getenv('SLURM_JOB_NUM_NODES') or os.getenv('SLURM_NNODES') or 1)
+nthreads = int(os.getenv('SLURM_STEP_NUM_TASKS') or os.getenv('SLURM_NTASKS') or 1)
+
+if nnodes > 2:
+    from dask.distributed import Client, LocalCluster
+    from dask_jobqueue import SLURMCluster
+
+    ntasks_per_node = int(os.getenv('SLURM_TASKS_PER_NODE').split("(")[0])
+
     mem = os.getenv('SLURM_MEM_PER_NODE')
     if mem is not None:
         mem = f'{int(mem) // 1024}GB'
-    client = Client(memory_limit=mem, processes=False,
-                    n_workers=nnodes, threads_per_worker=cores)
-    scheduler = client
-    
 
-print(f"Using {nthreads} threads with the {scheduler} scheduler")
+    cluster = LocalCluster(n_workers=nnodes,
+                           threads_per_worker=ntasks_per_node,
+                           memory_limit=mem)
+    client = Client(cluster)
+    client.start_workers(8)
+    scheduler = dask.config.get('scheduler')
+    print(f"Using scheduler {scheduler} with {nnodes} nodes and {ntasks_per_node} cores per node")
+elif nthreads is not None:
+    dask.config.set(scheduler='threads')
+    scheduler = dask.config.get('scheduler')
+    print(f"Using {nthreads} threads with the {scheduler} scheduler")
+else:
+    scheduler = dask.config.get('scheduler')
+    print(f"Using {nthreads} threads with the {scheduler} scheduler")
 
 spws = {3: list(range(4)),
         6: list(range(7)),}
@@ -74,8 +84,10 @@ def dt():
 
 print("starting loops")
 
-for band in (6,3):
-    for config in ('12M', '7M12M'):
+redo = True
+
+for band in (3,6):
+    for config in ('12M',):# '7M12M'):
         for field in "G012.80 G328.25 G351.77 G327.29 G338.93 W51-E G353.41 G008.67 W43-MM2 G333.60 G337.92 W43-MM3 W43-MM1 G010.62 W51-IRS2".split():
             for spw in spws[band]:
                 for suffix in (".image", ".contsub.image"):
@@ -89,7 +101,7 @@ for band in (6,3):
                         print(f"Found no matches for glob {globblob}")
                         continue
 
-                    if os.path.exists('collapse/stdspec/{0}'.format(fn.replace(suffix,"_std_spec.fits"))):
+                    if not redo and os.path.exists('collapse/argmaxspec/{0}'.format(fn.replace(suffix,"_argmaxspec_spec.fits"))):
                         print(f"Found completed quicklooks for {fn}, skipping.")
                         continue
 
@@ -150,7 +162,7 @@ for band in (6,3):
                     dt()
                     print("Peak intensity")
                     mx = mcube.max(axis=0)#, how='slice')
-                    mx_K = (mx*u.beam).to(u.K, u.brightness_temperature(beam_area=beam,
+                    mx_K =  (mx*u.beam).to(u.K, u.brightness_temperature(beam_area=beam,
                                                                         frequency=cfrq))
                     mx_K.write('collapse/max/{0}'.format(fn.replace(suffix,"_max_K.fits")),
                                overwrite=True)
@@ -158,6 +170,9 @@ for band in (6,3):
                     mx.write('collapse/max/{0}'.format(fn.replace(suffix,"_max.fits")),
                              overwrite=True)
                     mx.quicklook('collapse/max/pngs/{0}'.format(fn.replace(suffix,"_max.png")))
+
+                    max_loc = np.unravel_index(np.nanargmax(mx_K), mx_K.shape)
+                    print(f"max_loc={max_loc}")
 
                     dt()
                     print("Min intensity")
@@ -168,6 +183,16 @@ for band in (6,3):
                                overwrite=True)
                     mn_K.quicklook('collapse/min/pngs/{0}'.format(fn.replace(suffix,"_min_K.png")))
 
+
+                    if hasattr(cube, 'beams'):
+                        print("Beams")
+                        pl.clf()
+                        dt()
+                        beams = cube.beams
+                        pl.plot(cube.spectral_axis, beams.major.value, label='major')
+                        pl.plot(cube.spectral_axis, beams.minor.value, label='minor')
+                        pl.legend(loc='best')
+                        pl.savefig("collapse/beams/pngs/{0}".format(fn.replace(suffix, "_beams.png")), bbox_inches='tight')
 
                     pl.clf()
                     dt()
@@ -180,10 +205,24 @@ for band in (6,3):
                         mxmodspec.write("collapse/maxspec/{0}".format(fn.replace(suffix, "_max_model_spec.fits")), overwrite=True)
                         mxmodspec.quicklook("collapse/maxspec/pngs/{0}".format(fn.replace(suffix, "_max_model_spec.png")))
 
+                    pl.clf()
+                    dt()
+                    print("Spectrum at max loc")
+                    mxspec = mcube[:,max_loc[0], max_loc[1]]
+                    mxspec.write("collapse/argmaxspec/{0}".format(fn.replace(suffix, "_argmax_spec.fits")), overwrite=True)
+                    mxspec.quicklook("collapse/argmaxspec/pngs/{0}".format(fn.replace(suffix, "_argmax_spec.png")))
+                    if os.path.exists(modfile):
+                        mxmodspec = modcube[:,max_loc[0], max_loc[1]]
+                        mxmodspec.write("collapse/argmaxspec/{0}".format(fn.replace(suffix, "_argmax_model_spec.fits")), overwrite=True)
+                        mxmodspec.quicklook("collapse/argmaxspec/pngs/{0}".format(fn.replace(suffix, "_argmax_model_spec.png")))
+
+
                     dt(); print("Spatial mad_std")
                     pl.close('all')
                     pl.clf()
-                    stdspec = mcube.mad_std(axis=(1,2))#, how='slice')
+                    rcmcube = mcube.rechunk([16,'auto','auto'])
+                    print(rcmcube)
+                    stdspec = rcmcube.mad_std(axis=(1,2))#, how='slice')
                     stdspec.write("collapse/stdspec/{0}".format(fn.replace(suffix, "_std_spec.fits")), overwrite=True)
                     stdspec.quicklook("collapse/stdspec/pngs/{0}".format(fn.replace(suffix, "_std_spec.png")))
 

@@ -8,34 +8,52 @@ import pylab as pl
 import os
 import time
 from pathlib import Path
+from astropy import log
 
 assert 'SCRIPT_DIR' in os.environ
 script_dir = Path(os.environ['SCRIPT_DIR'])
 
-scripts = ['delivery_status.py',
-           'imstats.py',
-           'before_after_selfcal_quicklooks_Oct2020_release.py',
-           'dirty_selfcal_compare.py',
+scripts = [
+           'make_june2021_release.py',
+           #'make_may2021release.py',
+           #'make_oct2020release.py',
+           # don't do this any more 'link_files.py',
+           'link_files_restructured.py',
+           'delivery_status.py',
+           'imstats_june2021.py', # full imstats will often break
+           #'before_after_selfcal_quicklooks_Feb2021release.py',
+           #'before_after_selfcal_quicklooks_May2021release.py',
+           'before_after_selfcal_quicklooks_June2021release.py',
+           'compare_June2021_to_May2021.py',
            'bsens_comparison.py',
+           'bsens_cleanest_diff_zooms.py',
+           'psf_check_figures.py',
+           'continuum_selections.py',
+           'central_frequency.py',
+           'dirty_selfcal_compare.py',
            'robust_comparisons.py',
            'selfcal_field_data.py',
-           'continuum_selections.py',
            'cube_metadata_grid.py',
-           'fullcube_quicklooks.py',
-           '7m12m_comparison.py',
-           'diagnostic_images.py',
+           'cube_spectral_quicklooks.py',
+           # this is a library, not a script: 'diagnostic_images.py',
            'diagnostic_spectra.py',
            'plot_uvspectra.py',
+           'fullcube_quicklooks.py',
+           '7m12m_comparison.py',
+           'cube_stats_grid.py',
+           'imstats.py',
           ]
 
 for scriptname in scripts:
     t0 = time.time()
+    log.info(f"script={scriptname}, fullpath={script_dir / scriptname}")
     print(f"script={scriptname}, fullpath={script_dir / scriptname}")
     try:
         runpy.run_path(str(script_dir / scriptname), run_name="__main__")
     except Exception as ex:
-        print(ex)
+        print("Exception: ",ex)
     pl.close('all')
+    log.info(f"script {scriptname} took {(time.time() - t0)/3600.:0.1f} hours")
     print(f"script {scriptname} took {(time.time() - t0)/3600.:0.1f} hours")
 
 

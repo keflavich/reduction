@@ -6,12 +6,12 @@ try:
     from casac import casac
     synthesisutils = casac.synthesisutils
     from taskinit import msmdtool, casalog, qatool, tbtool, mstool, iatool
-    from tasks import tclean
+    from tasks import tclean, flagdata
 except ImportError:
     from casatools import (quanta as qatool, table as tbtool, msmetadata as
                            msmdtool, synthesisutils, ms as mstool,
                            image as iatool)
-    from casatasks import casalog, tclean
+    from casatasks import casalog, tclean, flagdata
 msmd = msmdtool()
 ms = mstool()
 qa = qatool()
@@ -201,10 +201,12 @@ def get_indiv_imsize(ms, field, phasecenter, spw=0, pixfraction_of_fwhm=1/4.,
     wavelength = 299792458.0/freq # m
     # go a little past the first null in each direction
     # (radians)
-    primary_beam_fwhm = 1.22 * wavelength / antsize
+    # Note we originally had 1.22 (from the Rayleigh criterion, not well-justified)
+    # but empirically found that we need at least 1.26 to avoid wrapping images.
+    primary_beam_fwhm = 1.26 * wavelength / antsize
 
     # synthesized beam minimum size (max_baseline in m)
-    synthbeam_minsize_fwhm = 1.22 * wavelength / max_baseline
+    synthbeam_minsize_fwhm = 1.26 * wavelength / max_baseline
     # (radians)
     pixscale = pixfraction_of_fwhm * synthbeam_minsize_fwhm
 
@@ -213,6 +215,7 @@ def get_indiv_imsize(ms, field, phasecenter, spw=0, pixfraction_of_fwhm=1/4.,
         pixscale_as = 180/np.pi * 3600 * pixscale
         pixscale_as = np.round(pixscale_as, 2)
         if pixscale_as < min_pixscale:
+            logprint("Pixel scale was = {0} rad = {1} \", but is begin forced to min_pixscale={2} ".format(pixscale, pixscale_as/3600/180*np.pi, min_pixscale))
             pixscale_as = min_pixscale
         # re-set pixscale to be radians
         pixscale = pixscale_as * np.pi / 3600 / 180
@@ -285,8 +288,9 @@ def determine_imsize(ms, field, phasecenter, spw=0, pixfraction_of_fwhm=1/4., **
     logprint("Determining imsize of {0}".format(ms))
 
     if isinstance(ms, list):
-        results = [get_indiv_imsize(vis, field, phasecenter, spw,
-                                    pixfraction_of_fwhm, **kwargs)
+        # specify spw=0 always for lists, since they should be splitted MSes
+        results = [get_indiv_imsize(vis, field, phasecenter, spw=0,
+                                    pixfraction_of_fwhm=pixfraction_of_fwhm, **kwargs)
                    for vis in ms]
 
         dra = np.max([ra for ra, dec, pixscale in results])
@@ -413,7 +417,8 @@ def populate_model_column(imname, selfcal_ms, field, impars_thisiter,
              origin='almaimf_cont_selfcal')
     try:
         tclean(vis=selfcal_ms,
-                     field=field.encode(),
+                     #field=field.encode(),
+                     field=field,
                      imagename=imname,
                      phasecenter=phasecenter,
                      outframe='LSRK',
@@ -437,7 +442,8 @@ def populate_model_column(imname, selfcal_ms, field, impars_thisiter,
                  "  Trying again with reffreq={0}.".format(reffreq),
                  origin='almaimf_cont_selfcal')
         tclean(vis=selfcal_ms,
-               field=field.encode(),
+               #field=field.encode(),
+               field=field,
                imagename=imname,
                phasecenter=phasecenter,
                outframe='LSRK',
@@ -511,3 +517,146 @@ def populate_model_column(imname, selfcal_ms, field, impars_thisiter,
     # if not success:
     #     raise ValueError("tclean failed to restore the model {0}.model* "
     #                      "into the model column".format(imname))
+
+
+def get_non_bright_spws(vis, frequency=230.538e9):
+    """
+    From a measurement set, return all spw numbers that do not contain the specified line
+    
+    Parameters
+    ----------
+    vis : str
+        Measurement set name
+    frequency : float
+        Frequency of the line to exclude
+    """
+    
+    msmd.open(vis)
+    
+    spws_ontarget = msmd.spwsforintent('OBSERVE_TARGET#ON_SOURCE')
+    
+    spws = []
+    
+    for spwnum in spws_ontarget:
+        frqs = msmd.chanfreqs(spwnum)
+        bws = msmd.chanwidths(spwnum)
+        
+        if ((frqs.min() - bws[0]) > frequency) or ((frqs.min().max() + bws[0]) < frequency):
+            spws.append(spwnum)
+    
+    return spws
+
+
+def sethistory(prefix, selfcalpars=None, impars=None, selfcaliter=None):
+    from getversion import git_date, git_version
+    for suffix in ('.image.tt0', '.image.tt0.pbcor', '.residual.tt0'):
+        if os.path.exists(prefix+suffix):
+            ia.open(prefix+suffix)
+            if selfcalpars is not None:
+                ia.sethistory(origin='almaimf_cont_selfcal',
+                              history=["{0}: {1}".format(key, val) for key, val in
+                                       selfcalpars.items()])
+            if impars is not None:
+                ia.sethistory(origin='almaimf_cont_selfcal',
+                              history=["{0}: {1}".format(key, val) for key, val in
+                                       impars.items()])
+            if selfcaliter is not None:
+                ia.sethistory(origin='almaimf_cont_selfcal',
+                              history=["selfcaliter: {0}".format(selfcaliter)])
+            ia.sethistory(origin='almaimf_cont_imaging',
+                          history=["git_version: {0}".format(git_version),
+                                   "git_date: {0}".format(git_date)])
+            ia.close()
+            ia.done()
+
+
+def check_channel_flags(vis, tolerance=0, nchan_tolerance=10, **kwargs):
+
+    if isinstance(vis, list):
+        return [check_channel_flags(vv, tolerance=tolerance, nchan_tolerance=nchan_tolerance, **kwargs)
+                for vv in vis]
+
+    flagsum = flagdata(vis=vis, mode='summary', spwchan=True, **kwargs)
+    spws = set([int(key.split(":")[0]) for key in flagsum['spw:channel']])
+    fractions_of_channels_flagged = {spwn: {int(key.split(":")[1]):
+                                            flagsum['spw:channel'][key]['flagged']
+                                            /
+                                            flagsum['spw:channel'][key]['total']
+                                            for key in
+                                            flagsum['spw:channel'] if
+                                            int(key.split(":")[0])
+                                            == spwn }
+                                     for spwn in spws}
+
+    # for each spw, collect the fraction-of-channel flagged for each channel;
+    # if all channels have the same fraction flagged, there will just be 1
+    # value.  Ideally, this value is zero, but if there are consistently
+    # flagged out chunks, it's OK
+    unique_fractions = {k:list(set(v.values())) for k,v in
+            fractions_of_channels_flagged.items()}
+
+    # count the number of channels with unique fractions of baselines flagged
+    # the previous has a list of unique fractions - e.g, [0.1, 0.2]
+    # this one has the number of EBs with that fraction.
+    # e.g., for [0.1, 0.1, 0.2], it would be [2, 1]
+    # We do this so we can say that the most common fraction is the "right" one,
+    # and the other(s) is/are discrepant.
+    nunique_fractions = {k:[(np.array(list(v.values())) == vv).sum() for vv in
+        unique_fractions[k]] for k,v in fractions_of_channels_flagged.items()}
+
+    for spwn, nchanfracs in unique_fractions.items():
+        if len(nchanfracs) != 1:
+            if tolerance > 0:
+                mostcommon = max(nunique_fractions[spwn])
+                denominator = [frac for x, frac in zip(nunique_fractions[spwn],
+                    nchanfracs) if (x == mostcommon)][0]
+                maxdiff = (max(nchanfracs) - min(nchanfracs)) / denominator
+
+                if maxdiff < tolerance:
+                    logprint("Visibility file {0} has {1}%"
+                            " flagged-out channels (within tolerance).".format(vis, maxdiff*100))
+                else:
+                    if nchan_tolerance > 0:
+                        # count up the number of channels that exceed the tolerance
+                        notmostcommon = [x for x, frac in
+                                zip(nunique_fractions[spwn], nchanfracs) if (x
+                                    != mostcommon) and
+                                ((frac-min(nchanfracs))/denominator >
+                                    tolerance)]
+                        total_different = sum(notmostcommon)
+                        if total_different < nchan_tolerance:
+                            logprint("Visibility file {0} has at most {1}"
+                                    " channels with differing flag % "
+                                    "(maxdiff {3} is above tolerance {2}, but nchan {1} < {4})."
+                                    .format(vis, total_different, tolerance, maxdiff, nchan_tolerance))
+                        else:
+                            logprint("Visibility file {0} has at most {1} "
+                                    "channels with differing flag % "
+                                    "(maxdiff {3} is above tolerance {2} and nchan {1} >= nchantol {4})."
+                                    .format(vis, total_different, tolerance, maxdiff, nchan_tolerance))
+                            leastcommon_ind = np.argmin(nunique_fractions[spwn])
+                            discrepant_channels = sorted([key for key in
+                                fractions_of_channels_flagged[spwn] if
+                                fractions_of_channels_flagged[spwn][key] ==
+                                unique_fractions[spwn][leastcommon_ind]])
+                            if len(discrepant_channels) == total_different:
+                                logprint("The {1} channels with the least common fraction are: {0}"
+                                        .format(discrepant_channels, len(discrepant_channels)))
+                            else:
+                                logprint("There were several EBs with different fractions of channels flagged.  "
+                                         "unique_fractions[spw]={0}".format(unique_fractions[spwn]),
+                                        )
+                            raise ValueError("Spectral Window {0} of {1}"
+                                    " has too many differing-flag channels"
+                                    .format(spwn, vis))
+                    else:
+                        logprint("Visibility file {0} has {1}%"
+                                " flagged-out channels (above tolerance)."
+                                .format(vis, maxdiff*100))
+                        raise ValueError("Spectral Window {0} of {1}"
+                                " has too many flagged out channels".format(spwn, vis))
+            else:
+                print("Spectral Window {0} of {1} has flagged out channels".format(spwn, vis))
+                raise ValueError("Spectral Window {0} of {1} has flagged out channels".format(spwn, vis))
+
+    logprint("Visibility file {0} has no flagged-out channels or f(flagged)<tolerance.".format(vis))
