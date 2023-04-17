@@ -6,6 +6,7 @@ import keyring
 from astropy import units as u
 import datetime
 import sigfig
+import copy
 
 from latex_info import (latexdict, format_float, round_to_n, rounded,
                         rounded_arr, strip_trailing_zeros, exp_to_tex)
@@ -322,7 +323,10 @@ def make_latex_table_overview(releasename='June2021', savename='res_sens'):
     for band in ('B3','B6'):
         column_order += [f'FOV_{band}', f'Res. {band}', f'mad_sample_cleanest_{band}', f'mad_sample_bsens_{band}', f'10%_{band}']
 
+    oldmtbl = copy.deepcopy(mtbl)
+
     mtbl = mtbl[column_order]
+
 
 
     for old, new in cols_to_keep.items():
@@ -393,11 +397,25 @@ def make_latex_table_overview(releasename='June2021', savename='res_sens'):
     latexdict['tabletype'] = 'table*'
     latexdict['tablefoot'] = ("}\par\n"
                               ""
+                              r"""
+\begin{tablenotes}
+\item[1] Field of view (FOV) corresponding to the combined primary beam of the 1.3~mm and 3~mm mosaics, down to $15\%$.
+%
+\item[2] Angular resolution resulting from a \texttt{tclean} process with the Briggs robust parameter \texttt{robust}=0. 
+%
+\item[3] Noise level measured in the \bsens and \cleanest 12~m Array images at 1.3~mm and 3~mm.
+%
+\item[4] The maximum recoverable scale of the 12~m Array, often called the Largest angular Scale (LAS), is estimated for each 1.3~m and 3~mm images as the 10$^{\rm th}$ percentile of the baseline lengths of 12~m Array data (see Figs.~5--7 of \citealt{ginsburg22}).
+%https://www.iram.fr/IRAMFR/ARC/documents/cycle1/alma-technical-handbook.pdf
+%
+\end{tablenotes}"""
 
                              )
 
     mtbl.sort(['Region'])
+    return mtbl, oldmtbl
 
+    raise("Don't overwrite")
     mtbl.write(f"../overviewpaper/tables/{savename}.tex", formats=formats,
                overwrite=True, latexdict=latexdict)
 
@@ -409,7 +427,7 @@ def make_latex_table_overview(releasename='June2021', savename='res_sens'):
                 row = row.replace('(B3)','').replace('(B6)','').replace(',B3','').replace(',B6','').replace(" B3","").replace(" B6","")
             fh.write(row)
 
-    return mtbl
+    return mtbl, oldmtbl
 
 
 
@@ -417,4 +435,5 @@ if __name__ == "__main__":
 
     feb_bs = make_latex_table(releasename='February2021', savename='bsens_cleanest_diff')
     jun_bs = make_latex_table(releasename='June2021', savename='bsens_cleanest_diff_June2021')
-    ovtbl = make_latex_table_overview()
+    # this was hand-edited so we shouldn't overwrite any more
+    #ovtbl = make_latex_table_overview()
