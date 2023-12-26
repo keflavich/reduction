@@ -124,15 +124,15 @@ def get_indiv_imsize(ms, field, phasecenter, spw=0, pixfraction_of_fwhm=1/4.,
                          "The valid field names are {1}."
                          .format(field, msmd.fieldnames()))
     field_ids, = np.where(field_matches)
-    logprint("Found field IDs {0} matching field name {1}."
-             .format(field_ids, field))
+    logprint("Found {2} field IDs {0} matching field name {1}."
+             .format(field_ids, field, len(field_ids)))
 
     # only use the field IDs that have associated scans
     field_id_has_scans = np.array([len(msmd.scansforfield(fid)) > 0
                                    for fid in field_ids], dtype='bool')
 
-    logprint("Field IDs {0} matching field name {1} have scans."
-             .format(field_ids[field_id_has_scans], field))
+    logprint("{2} Field IDs {0} matching field name {1} have scans."
+             .format(field_ids[field_id_has_scans], field, len(field_ids[field_id_has_scans])))
 
     noscans = field_ids[~field_id_has_scans]
     if any(~field_id_has_scans):
@@ -185,7 +185,9 @@ def get_indiv_imsize(ms, field, phasecenter, spw=0, pixfraction_of_fwhm=1/4.,
         logprint("Determining pixel scale and image size for only 7m data")
     else:
         # the shape matters if any are false...
-        field_id_has_scans = field_id_has_scans[field_id_has_scans]
+        # we don't want x = x[x] since that returns a boolean array of the wrong shape
+        field_id_has_scans, = np.where(field_id_has_scans)
+        logprint(f"Reduced field_id_has_scans to {field_id_has_scans}")
         bl_sel = slice(None)
         logprint("Determining pixel scale and image size for all data, both 7m and 12m")
 
@@ -223,7 +225,8 @@ def get_indiv_imsize(ms, field, phasecenter, spw=0, pixfraction_of_fwhm=1/4.,
     else:
         raise ValueError("Pixel scale was {0}\", too small".format(pixscale*206265))
 
-    pb_pix = (primary_beam_fwhm / pixscale)[field_id_has_scans]
+    # do not need [field_id_has_scans] because antsize has already been downselected
+    pb_pix = (primary_beam_fwhm / pixscale)
 
 
     def r2d(x):
