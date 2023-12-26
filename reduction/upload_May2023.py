@@ -27,7 +27,7 @@ def java_upload_file(filename, api_key, persistentId):
             + [filename])
 
 # former dataset_id=6565108,
-def upload_dataset(upload_filelist, dataset_id=None, persistentId=None, overwrite=False, n_retries=10):
+def upload_dataset(upload_filelist, dataset_id=None, persistentId=None, overwrite=False, n_retries=10, version='draft'):
 
     #if dataset_id is not None:
     #    url_dataset_id = '%s/api/datasets/%s/add?key=%s' % (dataverse_server, dataset_id, api_key)
@@ -39,9 +39,9 @@ def upload_dataset(upload_filelist, dataset_id=None, persistentId=None, overwrit
     for ntries in range(n_retries):
         try:
             #if dataset_id is not None:
-            #    url_list = f'{dataverse_server}/api/datasets/{dataset_id}/versions/:draft/files?key={api_key}'
+            #    url_list = f'{dataverse_server}/api/datasets/{dataset_id}/versions/:{version}/files?key={api_key}'
             #elif persistentId is not None:
-            url_list = f'{dataverse_server}/api/datasets/:persistentId/versions/:draft/files?key={api_key}&persistentId={persistentId}'
+            url_list = f'{dataverse_server}/api/datasets/:persistentId/versions/:{version}/files?key={api_key}&persistentId={persistentId}'
             filelist_resp = requests.get(url_list)
             file_metadata = filelist_resp.json()
             assert file_metadata['status'] == 'OK'
