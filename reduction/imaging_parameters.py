@@ -3447,6 +3447,7 @@ line_imaging_parameters_custom = {
         "pblimit": 0.1,
         "threshold": "16mJy",  # sigma is ~4 mJy
         "startmodel": "Sgr_B2_DS_B6_uid___A001_X1290_X46_continuum_merged_12M_robust0_selfcal4_finaliter",
+    },
     "W51-IRS2_B6_12M_robust0_sio": {
         "threshold": "6.4mJy",  # typical rms is 2.7-3.2 mJy, using 3sigma for threshold (14 Dec. 2020)
         "startmodel": "W51-IRS2_B6_uid___A001_X1296_X187_continuum_merged_12M_robust0_selfcal9_finaliter",
