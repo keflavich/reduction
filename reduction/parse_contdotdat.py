@@ -23,6 +23,8 @@ try:
         from casatools import msmetadata as msmdtool
         from casatools import ms as mstool
     qq = quanta()
+    ms = mstool()
+    msmd = msmdtool()
 
     def contchannels_to_linechannels(contsel, freqslist, return_fractions=False):
         """
@@ -175,6 +177,8 @@ try:
                 spw = spw_mapping[spwn]
             elif spw_mapping is not None:
                 continue
+            else:
+                spw = spwn
             print("spectral window = {spw}".format(spw=spw))
             freqs = ms.cvelfreqs(spw)
 

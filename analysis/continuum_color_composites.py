@@ -4,6 +4,10 @@ import numpy as np
 import reproject
 from astropy.io import fits
 from astropy.wcs import WCS
+import PIL
+from PIL import Image
+import pyavm
+from save_rgb import save_rgb
 
 from astropy.visualization import simple_norm
 import pylab as pl
@@ -95,6 +99,9 @@ for field in "G008.67 G337.92 W43-MM3 G328.25 G351.77 G012.80 G327.29 W43-MM1 G0
         pl.savefig(f'{basepath}/{field}/continuum_colorcomposites/{field}_{imtype}_B3_B6_colorcomposite.pdf', bbox_inches='tight')
         pl.savefig(f'{basepath}/{field}/continuum_colorcomposites/{field}_{imtype}_B3_B6_colorcomposite.png', bbox_inches='tight', dpi=300)
 
+        # img is already in RGB shape....
+        save_rgb(img=img, wcs=b3wcs, filename=f'{basepath}/{field}/continuum_colorcomposites/{field}_{imtype}_B3_B6_colorcomposite_avm.png')
+
         if field == 'G327.29':
 
             fig2 = pl.figure(2)
@@ -117,3 +124,4 @@ for field in "G008.67 G337.92 W43-MM3 G328.25 G351.77 G012.80 G327.29 W43-MM1 G0
 
             fig2.savefig(f'{basepath}/{field}/continuum_colorcomposites/{field}_{imtype}_B3_B6_contourcomposite.pdf', bbox_inches='tight')
             fig2.savefig(f'{basepath}/{field}/continuum_colorcomposites/{field}_{imtype}_B3_B6_contourcomposite.png', bbox_inches='tight', dpi=300)
+

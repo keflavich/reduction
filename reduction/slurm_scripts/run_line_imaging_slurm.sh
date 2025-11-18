@@ -9,9 +9,10 @@ pwd; hostname; date
 echo "Memory=${MEM}"
 
 if [ -z $WORK_DIRECTORY ]; then
-    export WORK_DIRECTORY='/blue/adamginsburg/adamginsburg/almaimf/workdir'
+    export WORK_DIRECTORY='/blue/adamginsburg/adamginsburg/ALMA-IMF/workdir'
 fi
 export PRODUCT_DIRECTORY='/orange/adamginsburg/ALMA_IMF/2017.1.01355.L/imaging_results/'
+export METADATA_DIRECTORY='/orange/adamginsburg/ALMA_IMF/2017.1.01355.L/'
 
 # https://github.com/ipython/ipython/issues/2426/#issuecomment-8822369
 export IPYTHONDIR=/tmp
@@ -32,8 +33,10 @@ echo $?
 #export CASA=/orange/adamginsburg/casa/casa-release-5.8.0-109.el7/bin/casa
 #export CASA=/orange/adamginsburg/casa/casa-6.2.1-3/bin/casa
 #export CASA=/orange/adamginsburg/casa/casa-6.3.0-39/bin/casa
+# CASAVERSION=casa-6.4.3-4
+# CASAVERSION=casa-6.6.0-2-py3.8.el8
 if [[ ! $CASAVERSION ]]; then
-    CASAVERSION=casa-6.4.3-4
+    CASAVERSION=casa-6.7.2-42-py3.12.el8
     echo "Set CASA version to default ${CASAVERSION}"
 fi
 echo "CASA version = ${CASAVERSION}"
@@ -52,8 +55,9 @@ if ! [[ -d ${TEMP_WORKDIR} ]]; then
     mkdir ${TEMP_WORKDIR}
 fi
 
-ln ${WORK_DIRECTORY}/to_image.json ${TEMP_WORKDIR}/to_image.json
-ln ${WORK_DIRECTORY}/metadata.json ${TEMP_WORKDIR}/metadata.json
+# was previously 'ln ${WORK_DIRECTORY}/...', but there are several layered reasons that's wrong
+cp -v ${METADATA_DIRECTORY}/to_image.json ${TEMP_WORKDIR}/to_image.json
+cp -v ${METADATA_DIRECTORY}/metadata.json ${TEMP_WORKDIR}/metadata.json
 
 cd ${TEMP_WORKDIR}
 pwd

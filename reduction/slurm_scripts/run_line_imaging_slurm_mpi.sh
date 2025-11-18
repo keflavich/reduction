@@ -56,6 +56,7 @@ if [[ ! $CASAVERSION ]]; then
     #CASAVERSION=casa-6.3.0-48
     #CASAVERSION=casa-6.2.1-3
     #CASAVERSION=casa-6.1.0-118
+    CASAVERSION=casa-6.7.2-42-py3.12.el8
     echo "Set CASA version to default ${CASAVERSION}"
 fi
 echo "CASA version = ${CASAVERSION}"

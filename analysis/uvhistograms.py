@@ -96,7 +96,7 @@ if  __name__ == "__main__":
         print(msname)
 
         avfreq = np.average(freqs, weights=freqweights)
-        wavelength = (avfreq*u.Hz).to(u.m, u.spectral())          
+        wavelength = (avfreq*u.Hz).to(u.m, u.spectral())
 
         data = {}
         for spw in spws:

@@ -32,7 +32,7 @@ echo "Exclude 7m = ${EXCLUDE_7M};  Only 7m = ${ONLY_7M}  suffix=${suffix12m}"
     
 
 if [ -z $QOS ]; then
-    export QOS=adamginsburg-b
+    export QOS=astronomy-dept-b
 fi
 
 case $QOS in
@@ -115,7 +115,7 @@ fi
 
 export BAND_NUMBERS=6
 export BAND_TO_IMAGE=B${BAND_NUMBERS}
-for LINE_NAME in sio; do # h2co303 h30a 12co c18o; do
+for LINE_NAME in sio h2co303 12co c18o; do # h2co303 h30a 12co c18o; do
 
     export jobname=${FIELD_ID}_${BAND_TO_IMAGE}_${LINE_NAME}_${suffix12m}${suffix_contsub}
     export LOGFILENAME="${LOGPATH}/casa_log_line_${jobname}_$(date +%Y-%m-%d_%H_%M_%S).log"

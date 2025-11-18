@@ -34,7 +34,7 @@ nthreads = 1
 scheduler = 'synchronous'
 
 use_temp_dir = os.getenv('USE_TEMP_ZARR')
-os.environ['TMPDIR'] = '/blue/adamginsburg/adamginsburg/tmp/'
+os.environ['TMPDIR'] = '/red/adamginsburg/tmp/'
 
 nnodes = int(os.getenv('SLURM_JOB_NUM_NODES') or os.getenv('SLURM_NNODES') or 1)
 nthreads = int(os.getenv('SLURM_STEP_NUM_TASKS') or os.getenv('SLURM_NTASKS') or 1)

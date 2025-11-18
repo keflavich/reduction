@@ -65,6 +65,7 @@ if __name__ == "__main__":
     scheduler = dask.config.get('scheduler')
     print(f"Using {nthreads} threads with the {scheduler} scheduler")
 
+    print(f'tempdir = {tempfile.gettempdir()}')
     assert tempfile.gettempdir() == '/blue/adamginsburg/adamginsburg/tmp'
 
     redo = False
